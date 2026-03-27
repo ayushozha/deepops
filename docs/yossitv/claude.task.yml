@@ -4,26 +4,41 @@ owner: yossitv
 requirements:
 - frontend-requirements.md
 - person-b-policy.md
+- oauth-requirements.md
 execution_notes:
 - PB-001 と PB-002 と PB-003 は並列で着手する。
 - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
 - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
 context:
   current_state:
-  - frontend は Create Next App の初期雛形が残っており、実質的な UI 実装は frontend/app/page.tsx, frontend/app/layout.tsx,
-    frontend/app/globals.css のみ。
-  - frontend/app/dashboard/ 配下、dashboard 用 components、dashboard 用 hooks は未作成。
-  - frontend/next.config.ts に API proxy rewrites がなく、server/app.py にも CORS middleware
-    が見当たらないため、ローカル接続には frontend 側の proxy 設定が必要。
+  - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard
+    shell が入っている。
+  - frontend/app/dashboard/types.ts, hooks/useIncidents.ts, hooks/useApproval.ts,
+    hooks/useBackendHealth.ts を追加し、backend 契約、SSE、定期再取得、approval 反映、health polling
+    を閉じた。
+  - frontend/app/dashboard/components/IncidentList.tsx, DiffViewer.tsx, ApprovalButtons.tsx,
+    SeverityBadge.tsx, StatusBadge.tsx を実装し、dashboard/page.tsx で実データ接続まで統合した。
+  - frontend/next.config.ts に `/api/:path*` の proxy rewrites を追加し、`NEXT_PUBLIC_API_BASE_URL`
+    経由で FastAPI backend に接続できる。
   - backend 側は /api/health, /api/incidents, /api/incidents/{id}, /api/incidents/stream,
     /api/approval/{incident_id}/decision を実装済みで、SSE の custom event 名も要件と整合している。
   - GET /api/incidents は bare array を返し、POST /api/approval/{id}/decision は incident
     を含むラップ済みオブジェクトを返す。
-  - 2026-03-28 時点で `cd frontend && npm run build` と `cd frontend && npm run lint`
+  - 2026-03-28 時点で実装後の `cd frontend && npm run lint` と `cd frontend && npm run build`
     は成功している。
   agent_guidance:
     codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
     claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
+completion_log:
+- date: '2026-03-28'
+  actor: codex.task
+  summary:
+  - PB-001 を完了し、dashboard の型、incident 同期 hook、approval hook、health hook、Next.js proxy
+    rewrites を実装した。
+  - subagent を使って PB-002 から PB-006 の UI 実装を進め、landing page と dashboard components
+    を作成した。
+  - PB-007 を完了し、dashboard を backend API と接続、approval 後の再取得と health/SSE 監視を統合し、lint/build
+    を通した。
 generated_from: task.yml
 agent: claude.task
 tasks:
@@ -37,7 +52,7 @@ tasks:
     完了条件:
     - `/` が pitch ページとして成立している
     - `/dashboard` への導線が視認できる
-  status: ready
+  status: completed
   agent: claude.task
 - task_id: PB-003
   title: "`/dashboard` の固定ダークテーマと 3 カラム shell を作る"
@@ -49,7 +64,7 @@ tasks:
     完了条件:
     - `/dashboard` のレイアウトが要件どおりのパネル構成になっている
     - 色、罫線、フォントがハッカー風テーマに揃っている
-  status: ready
+  status: completed
   agent: claude.task
 - task_id: PB-004
   title: 左パネルの IncidentLog を prop 駆動コンポーネントとして実装する
@@ -61,7 +76,7 @@ tasks:
     完了条件:
     - Incident 一覧の見た目と情報密度が要件を満たす
     - page 層からデータと選択状態を渡すだけで使える
-  status: ready
+  status: completed
   agent: claude.task
 - task_id: PB-005
   title: 右上の DiffViewer と incident 詳細パネルを実装する
@@ -77,7 +92,7 @@ tasks:
     完了条件:
     - incident 選択時に detail パネルとして十分な情報が見える
     - incident 未選択時の空状態が崩れない
-  status: ready
+  status: completed
   agent: claude.task
 - task_id: PB-006
   title: 右下の ApprovalButtons を実装し、承認 UI の条件分岐を固定する
@@ -89,5 +104,5 @@ tasks:
     完了条件:
     - approval が不要な incident でボタンが出ない
     - pending incident だけ approve / reject が押せる
-  status: ready
+  status: completed
   agent: claude.task
