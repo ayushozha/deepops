@@ -72,8 +72,8 @@ def _query_macroscope(
     """
     source = incident.get("source", {})
     try:
-        client = MacroscopeClient(fallback_mode=True)
-        used_fallback = True
+        client = MacroscopeClient(fallback_mode=False)
+        used_fallback = False
     except Exception:
         client = MacroscopeClient(fallback_mode=True)
         used_fallback = True
@@ -206,7 +206,7 @@ def get_diagnosis_metadata(diagnosis_result: dict) -> dict:
         "fallback_used": status == "failed",
         "macroscope_mode": (
             "fallback" if diagnosis_result.get("macroscope_context", "").startswith("Macroscope unavailable")
-            else "fallback"  # always fallback in demo mode
+            else "live"
         ),
         "duration_ms": max(0, completed - started),
     }
