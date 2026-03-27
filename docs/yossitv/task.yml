@@ -9,6 +9,8 @@ execution_notes:
   - PB-001 と PB-002 と PB-003 は並列で着手する。
   - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
   - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
+  - PB-008 で Auth0 SDK v4 の導入方針と `/auth/*` ルートを固定してから PB-009 と PB-010 に着手する。
+  - PB-009 は公開 landing と auth 導線、PB-010 は dashboard の session-aware UI に集中し、最後に PB-011 で callback / env / build を通しで確認する。
 context:
   current_state:
     - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard shell が入っている。
@@ -18,6 +20,8 @@ context:
     - backend 側は /api/health, /api/incidents, /api/incidents/{id}, /api/incidents/stream, /api/approval/{incident_id}/decision を実装済みで、SSE の custom event 名も要件と整合している。
     - GET /api/incidents は bare array を返し、POST /api/approval/{id}/decision は incident を含むラップ済みオブジェクトを返す。
     - 2026-03-28 時点で実装後の `cd frontend && npm run lint` と `cd frontend && npm run build` は成功している。
+    - ただし frontend には Auth0 Next.js SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`, login/logout/profile UI, session-aware な `/dashboard` の認証分岐はまだ入っていない。
+    - OAuth 要件は `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md` の `/auth/*` 前提を採用し、古い `/api/auth/*` ルートは使わない。
   agent_guidance:
     codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
     claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
@@ -125,3 +129,53 @@ tasks:
       - build / lint が通る
     status: completed
     agent: codex.task
+  - task_id: PB-008
+    title: "Auth0 Next.js SDK v4 の基盤を frontend に導入し `/auth/*` ルートを有効化する"
+    description: |
+      `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md` を基準に、frontend に Auth0 v4 の土台を入れる。
+      `frontend/package.json` に `@auth0/nextjs-auth0` を追加し、`frontend/lib/auth0.ts` で `new Auth0Client()` を export する。
+      さらに `frontend/proxy.ts` を追加して quickstart どおりの `/auth/*` ルートを有効化し、dynamic route handler や古い `/api/auth/*` 実装は作らない。
+      `.env.local` / repo root `.env` で必要な環境変数名と `AUTH0_REDIRECT_URI=http://localhost:3000/auth/callback` の前提が崩れないよう、参照箇所や README を必要最小限更新してよい。
+      完了条件:
+      - frontend で Auth0 SDK v4 が参照可能
+      - `/auth/login` と `/auth/logout` の導線を置ける基盤がある
+      - `proxy.ts` 前提の構成で `/auth/*` を使う方針がコード上でも明確
+    status: pending
+    agent: claude.task
+  - task_id: PB-009
+    title: "公開 landing と共通 auth UI に login/logout/profile 導線を追加する"
+    description: |
+      `frontend/components/auth/LoginButton.tsx`, `LogoutButton.tsx`, `Profile.tsx` を追加し、anchor ベースの `/auth/login` / `/auth/logout` 導線を実装する。
+      `frontend/app/page.tsx` は公開ページのまま維持しつつ、未認証時に login CTA を見せ、認証済みなら dashboard への導線とユーザー表示名または email を見せられるようにする。
+      既存の DeepOps の見た目は保ちつつ、Auth0 quickstart の最小 UI 要件を満たすことを優先する。
+      完了条件:
+      - `/` から login を開始できる
+      - logout 導線と profile 表示が実装されている
+      - auth UI が既存 landing のデザインを壊さず統合されている
+    status: pending
+    agent: claude.task
+  - task_id: PB-010
+    title: "`/dashboard` を session-aware にし未認証時の login prompt と認証済み承認 UI を分岐する"
+    description: |
+      `auth0.getSession()` を使って `/dashboard` の表示を認証状態で分岐させる。
+      未認証時は dashboard 全体を壊さず login CTA または read-only 表示にし、`APPROVE` / `REJECT` ボタンは出さない。
+      認証済み時は既存の incident list, diff viewer, health 状態を維持したまま approval UI を表示し、ヘッダーまたは適切な位置で user identity を確認できるようにする。
+      server component と client component の責務分割は実装しやすい形で見直してよいが、UI 側で session 有無の条件分岐が明確であることを優先する。
+      完了条件:
+      - `/dashboard` が session の有無で login prompt か本来の dashboard を出し分ける
+      - 未認証ユーザーに `APPROVE` / `REJECT` が見えない
+      - 認証済みユーザー名または email が UI で確認できる
+    status: pending
+    agent: claude.task
+  - task_id: PB-011
+    title: "OAuth callback と環境変数前提を確認し lint/build まで通す"
+    description: |
+      Auth0 の callback / logout / origin 前提を `http://localhost:3000` と `/auth/callback` に合わせ、古い `/api/auth/callback` 前提が残っていないか確認する。
+      必要なら `frontend/README.md` か関連ドキュメントに、ローカルで必要な Auth0 設定値と手動確認手順を短く追記する。
+      最後に `cd frontend && npm run lint` と `cd frontend && npm run build` を実行し、OAuth 導入後も Person B frontend が壊れていないことを確認する。
+      完了条件:
+      - `AUTH0_REDIRECT_URI` と callback URL の前提が `/auth/callback` に揃っている
+      - 手動確認に必要な最小限の情報が repo 内に残っている
+      - frontend の lint/build が通る
+    status: pending
+    agent: claude.task

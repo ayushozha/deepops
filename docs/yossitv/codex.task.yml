@@ -9,6 +9,9 @@ execution_notes:
 - PB-001 と PB-002 と PB-003 は並列で着手する。
 - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
 - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
+- PB-008 で Auth0 SDK v4 の導入方針と `/auth/*` ルートを固定してから PB-009 と PB-010 に着手する。
+- PB-009 は公開 landing と auth 導線、PB-010 は dashboard の session-aware UI に集中し、最後に PB-011
+  で callback / env / build を通しで確認する。
 context:
   current_state:
   - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard
@@ -26,6 +29,10 @@ context:
     を含むラップ済みオブジェクトを返す。
   - 2026-03-28 時点で実装後の `cd frontend && npm run lint` と `cd frontend && npm run build`
     は成功している。
+  - ただし frontend には Auth0 Next.js SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`,
+    login/logout/profile UI, session-aware な `/dashboard` の認証分岐はまだ入っていない。
+  - OAuth 要件は `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md`
+    の `/auth/*` 前提を採用し、古い `/api/auth/*` ルートは使わない。
   agent_guidance:
     codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
     claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
