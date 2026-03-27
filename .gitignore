@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .vscode/
+infra/aerospike/data/*.dat
+api_key blandai.txt
+deepops_AccessToken.txt

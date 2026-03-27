@@ -77,3 +77,49 @@ def test_extract_files_changed():
 
 def test_extract_files_changed_empty_on_none():
     assert _extract_files_changed(None) == []
+
+
+# ---------------------------------------------------------------------------
+# Zero exit with empty output
+# ---------------------------------------------------------------------------
+
+def test_kiro_zero_exit_empty_output():
+    client = KiroClient()
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_proc.stdout = ""
+    mock_proc.stderr = ""
+    with patch("subprocess.run", return_value=mock_proc):
+        result = client.run("# spec", repo_path=".")
+    assert result["success"] is False
+    assert result["exit_code"] == 0
+    assert "no usable diff output" in result["stderr"]
+
+
+# ---------------------------------------------------------------------------
+# call_tool import verification
+# ---------------------------------------------------------------------------
+
+def test_call_tool_import_from_tracing():
+    import agent.kiro_client as kc
+    import agent.tracing as tracing
+    # local shim must be gone
+    assert not hasattr(kc, 'call_tool') or kc.call_tool is tracing.call_tool
+
+
+# ---------------------------------------------------------------------------
+# Diff without extractable file paths
+# ---------------------------------------------------------------------------
+
+def test_kiro_diff_without_files_is_rejected():
+    client = KiroClient()
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_proc.stdout = "--- a/foo.py\n+++ b/foo.py\n@@ -1,2 +1,3 @@\n line\n+added\n"
+    mock_proc.stderr = ""
+    # Simulate a diff being parsed but no file paths extracted
+    with patch("subprocess.run", return_value=mock_proc), \
+         patch("agent.kiro_client._extract_files_changed", return_value=[]):
+        result = client.run("# spec", repo_path=".")
+    assert result["success"] is False
+    assert "no file paths could be extracted" in result["stderr"]

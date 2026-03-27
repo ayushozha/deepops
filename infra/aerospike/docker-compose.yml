@@ -1,0 +1,13 @@
+services:
+  aerospike:
+    image: aerospike/aerospike-server:latest
+    container_name: deepops-aerospike
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+      - "3002:3002"
+    volumes:
+      - ./aerospike.conf:/opt/aerospike/etc/aerospike.conf:ro
+      - ./data:/opt/aerospike/data
+    command: ["--config-file", "/opt/aerospike/etc/aerospike.conf"]
+    restart: unless-stopped

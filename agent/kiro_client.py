@@ -9,6 +9,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from agent.tracing import call_tool as _traced_call_tool
+
 
 # ---------------------------------------------------------------------------
 # Output parsing helpers
@@ -73,7 +75,7 @@ class KiroClient:
             spec_file = tmp.name
 
         try:
-            return self._invoke(spec_file, repo_path, timeout)
+            return _traced_call_tool("kiro_fix", self._invoke, spec_file, repo_path, timeout)
         finally:
             # Clean up temp file
             try:
@@ -111,10 +113,18 @@ class KiroClient:
 
         stdout = proc.stdout or ""
         stderr = proc.stderr or ""
-        success = proc.returncode == 0
 
         diff = _extract_diff(stdout) if stdout.strip() else None
         files_changed = _extract_files_changed(diff)
+
+        if proc.returncode == 0 and diff is None and not stdout.strip():
+            success = False
+            stderr = (stderr + "\nKiro exited 0 but produced no usable diff output.").lstrip()
+        elif proc.returncode == 0 and diff is not None and not files_changed:
+            success = False
+            stderr = (stderr + "\nKiro produced a diff but no file paths could be extracted.").lstrip()
+        else:
+            success = proc.returncode == 0
 
         return {
             "success": success,
@@ -139,20 +149,3 @@ class KiroClient:
             "diff_preview": None,
             "files_changed": [],
         }
-
-
-# ---------------------------------------------------------------------------
-# call_tool shim (Overclaw tracing compatibility)
-# ---------------------------------------------------------------------------
-
-def call_tool(method: str, **kwargs):
-    """
-    Thin shim so KiroClient can be wrapped by Overclaw's call_tool tracer.
-
-    Example::
-
-        result = call_tool("run", spec_markdown=md, repo_path="/repo")
-    """
-    client = KiroClient()
-    fn = getattr(client, method)
-    return fn(**kwargs)

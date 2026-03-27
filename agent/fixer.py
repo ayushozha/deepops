@@ -9,6 +9,17 @@ import time
 from agent.fix_specs import _detect_bug_class, generate_fix_spec
 from agent.kiro_client import KiroClient
 
+# ---------------------------------------------------------------------------
+# Schema helpers
+# ---------------------------------------------------------------------------
+
+_SCHEMA_FIX_KEYS = {"status", "spec_markdown", "diff_preview", "files_changed", "test_plan", "started_at_ms", "completed_at_ms"}
+
+
+def extract_schema_fix(fix_result: dict) -> dict:
+    """Return only the schema-valid fix fields, stripping _metadata and any other extras."""
+    return {k: v for k, v in fix_result.items() if k in _SCHEMA_FIX_KEYS}
+
 
 # ---------------------------------------------------------------------------
 # Diff trimming
@@ -249,7 +260,9 @@ def run_fix_generation(
         "test_plan": test_plan,
         "started_at_ms": started_at_ms,
         "completed_at_ms": completed_at_ms,
-        "_kiro_mode": kiro_mode,
-        "_fix_summary": fix_summary,
-        "_regression_warning": regression_warning,
+        "_metadata": {
+            "kiro_mode": kiro_mode,
+            "fix_summary": fix_summary,
+            "regression_warning": regression_warning,
+        },
     }

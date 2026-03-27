@@ -11,9 +11,7 @@ latency, and tool metadata.
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import time
 from typing import Any, Callable
 
@@ -26,28 +24,18 @@ from agent.prompts import (
     parse_diagnosis_response,
     DiagnosisParseError,
 )
+from agent.tracing import call_llm as traced_call_llm, call_tool as traced_call_tool
 
 logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# LLM call wrapper (Overclaw-compatible single call-site)
+# LLM call through shared tracing wrapper
 # ---------------------------------------------------------------------------
 
 
-def call_llm(prompt: str, llm_caller: Callable[[str], str] | None = None) -> str:
-    """Single LLM call-site for Overclaw compatibility.
-
-    If *llm_caller* is provided, delegates to it. Otherwise uses the
-    default Anthropic API caller.
-    """
-    if llm_caller is not None:
-        return llm_caller(prompt)
-    return _default_llm_call(prompt)
-
-
-def _default_llm_call(prompt: str) -> str:
-    """Default LLM caller using the Anthropic API."""
+def _make_llm_call(prompt: str) -> str:
+    """Call the LLM through the shared tracing wrapper."""
     try:
         import anthropic
     except ImportError as e:
@@ -57,12 +45,17 @@ def _default_llm_call(prompt: str) -> str:
         ) from e
 
     client = anthropic.Anthropic()
-    response = client.messages.create(
+
+    def _provider_call(**kwargs):
+        response = client.messages.create(**kwargs)
+        return response.content[0].text
+
+    return traced_call_llm(
+        _provider_call,
         model="claude-sonnet-4-20250514",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +86,9 @@ def _query_macroscope(
     )
 
     try:
-        context = client.query(
+        context = traced_call_tool(
+            "macroscope_query",
+            client.query,
             repo_id=repo_id,
             question=question,
             incident_context=source,
@@ -149,9 +144,12 @@ def run_diagnosis(
         prompt = build_diagnosis_prompt(incident, macroscope_context)
         logger.info("Diagnosis prompt built (%d chars)", len(prompt))
 
-        # Step 3: Call LLM
+        # Step 3: Call LLM (through shared tracer or injected caller)
         logger.info("Calling LLM for diagnosis...")
-        raw_response = call_llm(prompt, llm_caller)
+        if llm_caller is not None:
+            raw_response = llm_caller(prompt)
+        else:
+            raw_response = _make_llm_call(prompt)
         logger.info("LLM response received (%d chars)", len(raw_response))
 
         # Step 4: Parse response

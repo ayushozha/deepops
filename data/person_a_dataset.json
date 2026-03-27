@@ -278,5 +278,291 @@
       "confidence_max": 0.92,
       "severity_reasoning_contains": ["high", "intermittent", "third-party dependency", "partial failure"]
     }
+  },
+  {
+    "input": {
+      "incident_id": "INC-015",
+      "scenario": "ingestion",
+      "source": {
+        "path": "/api/data",
+        "error_type": "ValueError",
+        "error_message": "invalid literal for int() with base 10: 'N/A'",
+        "source_file": "app.py",
+        "sync_id": "sync_8a3f2c01"
+      },
+      "macroscope_context": "Airbyte sync sync_8a3f2c01 forwarded a record to POST /api/data containing a non-numeric string 'N/A' in the quantity field. The handler calls int(record['quantity']) without sanitizing Airbyte-sourced data."
+    },
+    "expected_output": {
+      "normalized_source": {
+        "provider": "airbyte",
+        "sync_id": "sync_8a3f2c01",
+        "error_type": "ValueError",
+        "path": "/api/data"
+      },
+      "root_cause": "The /api/data handler casts the quantity field to int without sanitizing upstream data from Airbyte, which can contain placeholder strings like 'N/A' instead of numeric values.",
+      "suggested_fix": "Sanitize and validate all Airbyte-sourced fields before type conversion, returning a 422 response with the offending field name and sync_id when validation fails.",
+      "affected_components": ["app.py", "airbyte integration"],
+      "confidence_min": 0.80,
+      "confidence_max": 0.95,
+      "severity_reasoning_contains": ["medium", "data quality", "upstream dependency"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-016",
+      "scenario": "ingestion",
+      "source": {
+        "path": "/trigger/calculate_zero",
+        "error_type": "ZeroDivisionError",
+        "error_message": "division by zero",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "POST /trigger/calculate_zero invoked the demo trigger endpoint which internally calls /calculate/0. The trigger endpoint wraps the demo bug for testing purposes. The error is the same ZeroDivisionError but arrives via the trigger path, not the raw error path."
+    },
+    "expected_output": {
+      "normalized_source": {
+        "provider": "demo-app",
+        "error_type": "ZeroDivisionError",
+        "path": "/trigger/calculate_zero"
+      },
+      "root_cause": "The /trigger/calculate_zero endpoint internally invokes the /calculate/0 route, which divides by zero because the demo trigger hardcodes the zero divisor.",
+      "suggested_fix": "Add a guard clause in the calculate route to reject zero divisors, and ensure the trigger endpoint surfaces the error cleanly rather than propagating an unhandled exception.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "demo trigger", "non-critical"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-017",
+      "scenario": "ingestion",
+      "source": {
+        "path": "/api/ingest",
+        "error_message": "Airbyte record missing required field: error_type",
+        "source_file": "normalizer.py",
+        "sync_id": "sync_ff920b44"
+      },
+      "macroscope_context": "Airbyte sync sync_ff920b44 sent a record to the ingestion endpoint that was missing the error_type field entirely. The normalizer rejected the record during schema validation."
+    },
+    "expected_output": {
+      "normalized_source": {
+        "provider": "airbyte",
+        "sync_id": "sync_ff920b44",
+        "error_type": "SchemaValidationError",
+        "path": "/api/ingest"
+      },
+      "root_cause": "The Airbyte source connector emitted a record without the required error_type field, causing the normalizer to reject it during schema validation.",
+      "suggested_fix": "Set error_type to a sensible default like 'UnknownError' when the field is missing from Airbyte records, log a warning with the sync_id, and continue processing rather than rejecting the entire record.",
+      "affected_components": ["normalizer.py", "airbyte integration"],
+      "confidence_min": 0.75,
+      "confidence_max": 0.90,
+      "severity_reasoning_contains": ["low", "data quality", "missing field", "recoverable"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-018",
+      "scenario": "diagnosis",
+      "source": {
+        "path": "/user/admin_panel",
+        "error_type": "KeyError",
+        "error_message": "'admin_panel'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /user/admin_panel raised KeyError. The admin_panel user does not exist in the users dictionary. This endpoint is used by internal tools for admin lookups. Failure here blocks the admin dashboard from loading, affecting all internal operators."
+    },
+    "expected_output": {
+      "root_cause": "The /user route accesses the users dictionary with bracket notation for the key 'admin_panel', which does not exist. This blocks the admin dashboard that depends on this endpoint.",
+      "suggested_fix": "Use dict.get() with a fallback or check key existence before access, and return a 404 with a descriptive message. Ensure the admin user is seeded in the data store on startup.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.88,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["high", "user-facing", "admin tool dependency", "Bland AI approval required"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-019",
+      "scenario": "diagnosis",
+      "source": {
+        "path": "/api/data",
+        "error_type": "ConnectionError",
+        "error_message": "Database connection timed out after 30s",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "POST /api/data failed with a database connection timeout. All write operations are blocked. The database server is unresponsive and has not recovered after 2 minutes. Monitoring shows the database host has 100% CPU utilization from a runaway vacuum process."
+    },
+    "expected_output": {
+      "root_cause": "The database server is unresponsive due to 100% CPU utilization from a runaway vacuum process, causing all write operations through /api/data to time out after 30 seconds.",
+      "suggested_fix": "Terminate the runaway vacuum process on the database host to restore CPU availability, then implement statement_timeout and idle_in_transaction_session_timeout to prevent future runaway operations.",
+      "affected_components": ["app.py", "database server"],
+      "confidence_min": 0.70,
+      "confidence_max": 0.85,
+      "severity_reasoning_contains": ["critical", "total write outage", "urgent escalation", "Bland AI approval required"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-020",
+      "scenario": "bland_webhook",
+      "source": {
+        "path": "/user/admin_panel",
+        "error_type": "KeyError",
+        "error_message": "'admin_panel'",
+        "source_file": "app.py"
+      },
+      "webhook_payload": {
+        "call_id": "call_abc123",
+        "incident_id": "INC-018",
+        "status": "completed",
+        "transcript": "Yes, I approve the deployment of the fix for the admin panel KeyError. Go ahead and deploy it.",
+        "decision": "approved",
+        "answered_by": "human",
+        "call_length": 45.2
+      },
+      "macroscope_context": "Bland AI call completed for INC-018. The approver explicitly approved the fix deployment in the transcript."
+    },
+    "expected_output": {
+      "approval_status": "approved",
+      "approval_source": "bland_ai",
+      "call_id": "call_abc123",
+      "linked_incident_id": "INC-018",
+      "transcript_keywords_matched": ["approve", "deploy"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-021",
+      "scenario": "bland_webhook",
+      "source": {
+        "path": "/api/data",
+        "error_type": "ConnectionError",
+        "error_message": "Database connection timed out after 30s",
+        "source_file": "app.py"
+      },
+      "webhook_payload": {
+        "call_id": "call_def456",
+        "incident_id": "INC-019",
+        "status": "completed",
+        "transcript": "No, do not deploy that fix right now. We need to investigate the database issue further before making changes. I reject the deployment.",
+        "decision": "rejected",
+        "answered_by": "human",
+        "call_length": 62.8
+      },
+      "macroscope_context": "Bland AI call completed for INC-019. The approver explicitly rejected the fix deployment, requesting further investigation."
+    },
+    "expected_output": {
+      "approval_status": "rejected",
+      "approval_source": "bland_ai",
+      "call_id": "call_def456",
+      "linked_incident_id": "INC-019",
+      "transcript_keywords_matched": ["reject", "do not deploy"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-022",
+      "scenario": "bland_webhook",
+      "source": {
+        "path": "/search",
+        "error_type": "TimeoutError",
+        "error_message": "Request timed out after 5 seconds",
+        "source_file": "app.py"
+      },
+      "webhook_payload": {
+        "call_id": "call_ghi789",
+        "incident_id": "INC-007",
+        "status": "completed",
+        "transcript": "Hmm, I'm not sure about this one. It could go either way. Let me think about it. Maybe we should wait. I don't know, what do you recommend?",
+        "decision": "unknown",
+        "answered_by": "human",
+        "call_length": 38.5
+      },
+      "macroscope_context": "Bland AI call completed for INC-007. The transcript is ambiguous and does not contain a clear approval or rejection. The approver was indecisive."
+    },
+    "expected_output": {
+      "approval_status": "pending",
+      "approval_source": "bland_ai",
+      "call_id": "call_ghi789",
+      "linked_incident_id": "INC-007",
+      "transcript_keywords_matched": [],
+      "confidence_min": 0.0,
+      "confidence_max": 0.50,
+      "requires_manual_review": true
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-023",
+      "scenario": "diagnosis",
+      "source": {
+        "path": "/calculate/0",
+        "error_type": "ZeroDivisionError",
+        "error_message": "division by zero",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /calculate/0 raised ZeroDivisionError. This is the same error as INC-001. The fingerprint (hash of error_type + path) matches an existing incident. This is a deduplication scenario: the system should recognize this as a duplicate and link to the existing incident rather than creating a new diagnosis."
+    },
+    "expected_output": {
+      "root_cause": "The /calculate/<value> route uses the URL parameter as a divisor without checking for zero, causing ZeroDivisionError when value is 0.",
+      "suggested_fix": "Add a guard clause before the division that returns a 400 response when the divisor is zero.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.88,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "non-critical", "no data loss"],
+      "is_duplicate": true,
+      "duplicate_of": "INC-001",
+      "fingerprint_match": true
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-024",
+      "scenario": "diagnosis",
+      "source": {
+        "path": "/user/unknown",
+        "error_type": "KeyError",
+        "error_message": "'unknown'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /user/unknown raised KeyError. A previous diagnosis attempt for a similar incident (INC-004) failed due to a transient LLM timeout. This is a retry scenario. The system should produce a fresh diagnosis without being influenced by the prior failure."
+    },
+    "expected_output": {
+      "root_cause": "The /user/<username> route accesses the users dictionary with bracket notation without verifying the key exists, raising KeyError for unknown usernames.",
+      "suggested_fix": "Use dict.get() with a default or check key membership before access, and return a 404 response when the user is not found.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["high", "user-facing", "data lookup failure"],
+      "is_retry": true,
+      "previous_attempt_incident": "INC-004",
+      "previous_failure_reason": "transient LLM timeout"
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-025",
+      "scenario": "diagnosis",
+      "source": {
+        "path": "/api/transform",
+        "error_type": "RuntimeError",
+        "error_message": "coroutine 'transform_pipeline' was never awaited",
+        "source_file": "transform.py"
+      },
+      "macroscope_context": "POST /api/transform raised RuntimeError. The handler calls transform_pipeline() which is an async coroutine, but the call site does not use await. This is a coding error where an async function is called synchronously. The error type RuntimeError is not one of the three demo bugs."
+    },
+    "expected_output": {
+      "root_cause": "The /api/transform handler calls the async coroutine transform_pipeline() without awaiting it, causing a RuntimeError because the coroutine object is created but never executed.",
+      "suggested_fix": "Add the await keyword before the transform_pipeline() call, and ensure the handler itself is declared as async if it is not already.",
+      "affected_components": ["transform.py", "app.py"],
+      "confidence_min": 0.55,
+      "confidence_max": 0.75,
+      "severity_reasoning_contains": ["high", "unknown error type", "all transform requests affected", "data processing failure"]
+    }
   }
 ]

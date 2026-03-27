@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agent.fixer import run_fix_generation, trim_diff
+from agent.fixer import run_fix_generation, trim_diff, extract_schema_fix
 from tests.fixtures.diagnoses import (
     BLOCKING_TIMEOUT_DIAGNOSIS,
     BLOCKING_TIMEOUT_INCIDENT,
@@ -64,7 +64,7 @@ def test_fallback_mode_when_kiro_unavailable():
         assert key in result, f"Missing key in fallback result: {key}"
     # fallback diff should still be present
     assert result["diff_preview"] is not None
-    assert result["_kiro_mode"] == "fallback"
+    assert result["_metadata"]["kiro_mode"] == "fallback"
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +113,12 @@ def test_trim_diff_truncates_long_diff():
     assert len(result.splitlines()) <= 12  # header (3) + body (up to 7) + truncation note
 
 
+def test_fix_payload_is_schema_clean():
+    result = run_fix_generation(DIVIDE_BY_ZERO_INCIDENT, DIVIDE_BY_ZERO_DIAGNOSIS)
+    for banned in ("_kiro_mode", "_fix_summary", "_regression_warning"):
+        assert banned not in result, f"Schema-polluting key found at top level: {banned}"
+
+
 def test_trim_diff_preserves_header_lines():
     header = "--- a/foo.py\n+++ b/foo.py\n@@ -1,100 +1,101 @@\n"
     body_lines = [f" line {i}" for i in range(100)]
@@ -121,3 +127,15 @@ def test_trim_diff_preserves_header_lines():
     assert "--- a/foo.py" in result
     assert "+++ b/foo.py" in result
     assert "@@ -1,100 +1,101 @@" in result
+
+
+# ---------------------------------------------------------------------------
+# extract_schema_fix
+# ---------------------------------------------------------------------------
+
+def test_extract_schema_fix_strips_metadata():
+    fix_result = run_fix_generation(DIVIDE_BY_ZERO_INCIDENT, DIVIDE_BY_ZERO_DIAGNOSIS)
+    schema_fix = extract_schema_fix(fix_result)
+    assert "_metadata" not in schema_fix
+    for key in ("status", "spec_markdown", "diff_preview", "files_changed", "test_plan", "started_at_ms", "completed_at_ms"):
+        assert key in schema_fix
