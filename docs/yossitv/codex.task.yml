@@ -1,111 +1,94 @@
 version: 1
-scope: person-b
+scope: update-1
 owner: yossitv
 requirements:
-- frontend-requirements.md
-- person-b-policy.md
-- oauth-requirements.md
+- update-1.md
+- "../../README.md"
+- "../implementation-alignment.md"
+- "../incident.schema.json"
+- "../../demo-app/README.md"
 execution_notes:
-- PB-001 と PB-002 と PB-003 は並列で着手する。
-- PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
-- PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
-- PB-008 は Codex が先に着手し、Auth0 SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`,
-  `/auth/*` の前提を固定する。
-- PB-009 は Claude が公開 landing と共通 auth UI を先行実装してよいが、最終的な login/logout 接続は PB-008
-  完了後に合わせる。
-- PB-010 は PB-008 完了後に dashboard の session-aware 分岐へ進める。PB-011 は最後に callback / env
-  / lint/build をまとめて締める。
+- "`task.yml` を唯一のソースにし、agent 別ビューは `python docs/yossitv/render_task_views.py docs/yossitv`
+  で再生成する。"
+- U1-001 を先に開始し、U1-002 と U1-003 と U1-005 は `demo-app/main.py` だけを触る前提で並列に進めてよい。
+- U1-004 は U1-001 と U1-002/U1-003 の成果を受けて、apply と verify と deploy の責務を `DeploymentService`
+  に集約する。
+- U1-006 は local patch path が動いた後に着手する。`pytest` と必要な資格情報が無い間は docs と検証手順の整備を先に進める。
 context:
   current_state:
-  - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard
-    shell が入っている。
-  - frontend/app/dashboard/types.ts, hooks/useIncidents.ts, hooks/useApproval.ts,
-    hooks/useBackendHealth.ts を追加し、backend 契約、SSE、定期再取得、approval 反映、health polling
-    を閉じた。
-  - frontend/app/dashboard/components/IncidentList.tsx, DiffViewer.tsx, ApprovalButtons.tsx,
-    SeverityBadge.tsx, StatusBadge.tsx を実装し、dashboard/page.tsx で実データ接続まで統合した。
-  - frontend/next.config.ts に `/api/:path*` の proxy rewrites を追加し、`NEXT_PUBLIC_API_BASE_URL`
-    経由で FastAPI backend に接続できる。
-  - backend 側は /api/health, /api/incidents, /api/incidents/{id}, /api/incidents/stream,
-    /api/approval/{incident_id}/decision を実装済みで、SSE の custom event 名も要件と整合している。
-  - GET /api/incidents は bare array を返し、POST /api/approval/{id}/decision は incident
-    を含むラップ済みオブジェクトを返す。
-  - 2026-03-28 時点で実装後の `cd frontend && npm run lint` と `cd frontend && npm run build`
-    は成功している。
-  - ただし frontend には Auth0 Next.js SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`,
-    login/logout/profile UI, session-aware な `/dashboard` の認証分岐はまだ入っていない。
-  - OAuth 要件は `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md`
-    の `/auth/*` 前提を採用し、古い `/api/auth/*` ルートは使わない。
+  - "`agent/orchestrator.py` は incident を `stored -> diagnosing -> fixing -> gating`
+    まで進め、diagnosis と fix 生成までは実装済み。"
+  - "`server/services/demo_flow_service.py` は policy 判定、approval 分岐、`DeploymentService`
+    呼び出しまで接続済みで、`POST /api/agent/run-once` から run-once フローを起動できる。"
+  - "`agent/fixer.py` は `spec_markdown`, `diff_preview`, `files_changed`, `test_plan`
+    を返すが、Kiro が使えない場合は fallback の擬似 diff を返すだけで、repo の実ファイルは書き換えない。"
+  - "`agent/kiro_client.py` は Kiro CLI の stdout から diff を抽出するだけで、Kiro が repo を実際に編集したかの検証や、未トリムの
+    patch 保持をしていない。"
+  - "`server/services/fix_artifact_service.py` と `server/services/deployment_service.py`
+    は artifact と deployment status を扱うが、`demo-app/main.py` の apply, rollback, verification
+    は持っていない。"
+  - "`server/integrations/truefoundry_client.py` の submit body は service metadata
+    中心で、patch/spec 自体は送っていない。API key が無い場合は `MockTrueFoundryClient` が常に成功扱いにする。"
+  - "`demo-app/main.py` には `/calculate/{a}/{b}`, `/user/{username}`, `/search` の意図的バグが
+    2026-03-28 時点でも残っている。"
+  - "`tests/test_fixer.py`, `server/tests/test_deployment_service.py`, `server/tests/test_agent_demo_flow.py`
+    は payload と status 遷移を主に検証しており、repo mutation や修復後の demo-app 挙動は未検証。"
+  - 2026-03-28 に `python -m pytest -q tests/test_fixer.py tests/test_orchestrator.py
+    server/tests/test_deployment_service.py server/tests/test_agent_demo_flow.py`
+    を試したが、この環境には `pytest` が入っておらず実行できなかった。
+  assumptions:
+  - 最短でデモを本物に近づける経路は、まず local workspace の `demo-app/main.py` を確実に書き換えること。その後に TrueFoundry
+    連携を live mode へ寄せる。
+  - "`fix.diff_preview` は dashboard 表示用 preview とし、実 apply には未トリムの patch か構造化 edit
+    を別経路で扱う。"
+  - 自動変更対象は `demo-app/` 配下に限定し、repo 外パスや任意ファイル変更は拒否する。
   agent_guidance:
-    codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
-    claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
-completion_log:
-- date: '2026-03-28'
-  actor: codex.task
-  summary:
-  - PB-001 を完了し、dashboard の型、incident 同期 hook、approval hook、health hook、Next.js proxy
-    rewrites を実装した。
-  - subagent を使って PB-002 から PB-006 の UI 実装を進め、landing page と dashboard components
-    を作成した。
-  - PB-007 を完了し、dashboard を backend API と接続、approval 後の再取得と health/SSE 監視を統合し、lint/build
-    を通した。
+    codex.task: 推論を長く使い、契約整理、service 統合、rollback 方針、deploy 判定、検証計画を担当する。
+    claude code.task: 具体的な patch 生成、file apply 実装、demo-app の修正、テスト追加を高速に進める。
 generated_from: task.yml
 agent: codex.task
 tasks:
-- task_id: PB-001
-  title: Dashboard のデータ契約と API 接続基盤を固める
+- task_id: U1-001
+  title: real fix 実行契約と設定値を先に固定する
   description: |
-    Person B 実装の土台として frontend 側の契約を固定する。
-    `frontend/app/dashboard/types.ts` を作り、Incident、SSE payload、approval response の型を `frontend-requirements.md` と現状の backend 実装に合わせて定義する。
-    `frontend/app/dashboard/hooks/useIncidents.ts` で以下を実装する:
-    - `GET /api/incidents` の初期取得
-    - `EventSource` による `incident.created` / `incident.updated` 購読
-    - `pipeline.heartbeat` の無視
-    - 5-10 秒間隔の再取得
-    - window focus 復帰時の再取得
-    - `updated_at_ms desc` 優先の並び替え
-    - incident merge と selected incident の整合維持
-    `frontend/app/dashboard/hooks/useApproval.ts` で `/api/approval/{id}/decision` を叩き、`response.incident` を state に戻せるようにする。
-    あわせて `frontend/next.config.ts` に `/api/:path*` の proxy rewrites を追加し、`NEXT_PUBLIC_API_BASE_URL` を前提に FastAPI へ疎通できるようにする。
+    `update-1.md` の曖昧さを消し、run-once -> fix -> apply -> verify -> deploy の authoritative path を先に固定する。
+    対象:
+    - `config.py` に local apply 用の設定値を追加する。候補は `DEEPOPS_FIX_REPO_ROOT`, `DEEPOPS_ENABLE_LOCAL_PATCH_APPLY`, `DEEPOPS_ENABLE_TRUEFOUNDRY_DEPLOY`。
+    - `server/services/fix_artifact_service.py` か新 service のインターフェースで、dashboard 用 `diff_preview` と実 apply 用 full patch / structured edit を分離する。
+    - `server/services/deployment_service.py` が「apply 成功前に resolved にしない」契約を持てるよう、必要な入出力と失敗時の戻り値を整理する。
+    - apply / verify / deploy の各段階で `timeline` と `observability` に何を残すかを決める。
     完了条件:
-    - UI 側が ad-hoc 変換なしで backend payload を扱える
-    - hooks 単体で incident 一覧更新と approval 反映の責務が閉じている
-  status: completed
-  agent: codex.task
-- task_id: PB-007
-  title: Dashboard を backend と通しで接続し、ヘルス監視と整合性確認を締める
-  description: |
-    PB-001 から PB-006 を統合し、`frontend/app/dashboard/page.tsx` で実データ接続を完了させる。
-    `GET /api/health` を使った LIVE / DEGRADED / OFFLINE バッジ更新、selected incident の detail 再整合、approval 実行後の再取得、SSE 切断後の補完再取得をまとめて仕上げる。
-    仕上げとして build / lint を再実行し、必要なら手動確認手順を docs に短く残す。
-    完了条件:
-    - `/dashboard` が FastAPI backend に接続して動く
-    - SSE と定期再取得の併用で incident 表示が破綻しない
-    - build / lint が通る
-  status: completed
-  agent: codex.task
-- task_id: PB-008
-  title: Auth0 Next.js SDK v4 の基盤を frontend に導入し `/auth/*` ルートを有効化する
-  description: |
-    `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md` を基準に、frontend に Auth0 v4 の土台を入れる。
-    `frontend/package.json` に `@auth0/nextjs-auth0` を追加し、`frontend/lib/auth0.ts` で `new Auth0Client()` を export する。
-    さらに `frontend/proxy.ts` を追加して quickstart どおりの `/auth/*` ルートを有効化し、dynamic route handler や古い `/api/auth/*` 実装は作らない。
-    `.env.local` / repo root `.env` で必要な環境変数名と `AUTH0_REDIRECT_URI=http://localhost:3000/auth/callback` の前提が崩れないよう、参照箇所や README を必要最小限更新してよい。
-    完了条件:
-    - frontend で Auth0 SDK v4 が参照可能
-    - `/auth/login` と `/auth/logout` の導線を置ける基盤がある
-    - `proxy.ts` 前提の構成で `/auth/*` を使う方針がコード上でも明確
+    - downstream task が依存できる入力/出力 shape が 1 箇所にまとまっている。
+    - local patch mode と dry-run/mock mode の切替条件がコード上で明確になっている。
+    - `fix` schema を壊さずに full patch を扱う置き場が決まっている。
   status: ready
   agent: codex.task
-- task_id: PB-011
-  title: OAuth callback と環境変数前提を確認し lint/build まで通す
+- task_id: U1-004
+  title: DeploymentService を real apply -> verify -> deploy の単一路にまとめる
   description: |
-    Auth0 の callback / logout / origin 前提を `http://localhost:3000` と `/auth/callback` に合わせ、古い `/api/auth/callback` 前提が残っていないか確認する。
-    必要なら `frontend/README.md` か関連ドキュメントに、ローカルで必要な Auth0 設定値と手動確認手順を短く追記する。
-    最後に `cd frontend && npm run lint` と `cd frontend && npm run build` を実行し、OAuth 導入後も Person B frontend が壊れていないことを確認する。
+    deploy を「status を進めるだけ」の実装から、実際に fix を実行したうえで進める service へ置き換える。
+    対象:
+    - `server/services/demo_flow_service.py::_deploy_incident` から apply / verify / deploy の詳細を外し、`DeploymentService` に集約する。
+    - auto-deploy と manual approval deploy の両方が同じ service path を通るように整理する。
+    - local patch apply 後に targeted verification を実行し、成功した場合のみ `resolved` に進める。verify 失敗時は rollback する。
+    - `server/integrations/truefoundry_client.py` は live deploy に必要な payload を見直すか、credentials 不在時の local-only mode を明示する。
     完了条件:
-    - `AUTH0_REDIRECT_URI` と callback URL の前提が `/auth/callback` に揃っている
-    - 手動確認に必要な最小限の情報が repo 内に残っている
-    - frontend の lint/build が通る
+    - `resolved` は local apply と verification が通ったときだけ付く。
+    - approval 経由と auto-deploy 経由で deploy の実装が分岐しない。
+    - failure 理由と rollback 結果が `timeline` か `observability` に残る。
+  status: blocked
+  agent: codex.task
+- task_id: U1-006
+  title: end-to-end の受け入れ手順と live rehearsal 前提を docs に固める
+  description: |
+    コードが揃ったあとに、人が迷わず通し確認できるように最後の受け入れ条件を固める。
+    対象:
+    - `README.md`, `demo-app/README.md`, 必要なら `docs/yossitv/update-1.md` に local patch mode, required env vars, `pytest` 依存, live rehearsal 手順を追記する。
+    - `server/tests/test_agent_demo_flow.py` か追加の integration test で、incident が file apply の結果に依存して `resolved` / `failed` へ進むことを固定する。
+    - running demo-app と optional `TRUEFOUNDRY_API_KEY` が揃った環境で、`POST /api/agent/run-once` が本当にファイルを変えてから resolve することを確認する。
+    完了条件:
+    - live rehearsal の前提とコマンドが repo 内に 1 箇所で揃う。
+    - end-to-end 受け入れ条件を README だけで辿れる。
+    - 実行環境が足りない場合に何が足りないか docs から判断できる。
   status: blocked
   agent: codex.task
