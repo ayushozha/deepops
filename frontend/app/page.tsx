@@ -1,5 +1,15 @@
 import Link from "next/link";
 
+const serverRackImage =
+  "https://lh3.googleusercontent.com/aida-public/AB6AXuAIY4X50c9R-Yd2gJkhMiSDs9rf4l0Q-tQZ-8aJcGUHOlsGpwb2bRFe46nt6e_8YyCJ3o2D7yRSREefL59vAWsZCVobWUKuaNu7o4WGSPxWRP6y7_JGvGD1hKMvEHW7dcd8LcpaAFVL79qad8no2gCxHZupXqcwh9JZT8HR1BRBh8ZgsRM8lfyHppqtgjZik_tvOanSf6qyStSffU4ORcJH4dNUqVLuXuFUbn4-solk44gllDWpFZX1sIUQwldGi-4_5AQ1GG6NjPs";
+
+const heroRailItems = [
+  { key: "command", active: true },
+  { key: "logs", active: false },
+  { key: "metrics", active: false },
+  { key: "archive", active: false },
+] as const;
+
 const pipelineStages = [
   {
     sponsor: "Airbyte",
@@ -129,170 +139,197 @@ const schemaPreview = [
   "timeline: detect -> diagnose -> fix -> gate -> escalate",
 ] as const;
 
+function RailIcon({ icon }: { icon: (typeof heroRailItems)[number]["key"] }) {
+  const className = "h-6 w-6";
+
+  if (icon === "command") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+        <path
+          d="M5 6h14v12H5z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+        <path
+          d="m8 11 2 2-2 2M12.5 15H16"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "logs") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+        <path
+          d="M7 4h10v16H7zM9 2v4M15 2v4M9 10h6M9 14h6M9 18h4"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "metrics") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+        <path
+          d="M5 19V9M12 19V5M19 19v-8"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+        <path
+          d="M4 19h16"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M6 7h12M7 7v11h10V7M9 11h6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 4h6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
       <div className="scanline-overlay" />
 
-      <header className="fixed inset-x-0 top-0 z-20 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-10">
-          <div className="flex items-center gap-4">
-            <div className="font-display text-xl font-black uppercase tracking-[0.16em] text-[#634BFF]">
-              DeepOps
+      <section className="border-b border-white/8 px-3 pt-3 pb-10 sm:px-4">
+        <div className="mx-auto overflow-hidden rounded-[26px] border border-[#634BFF]/30 bg-black shadow-[0_0_0_1px_rgba(99,75,255,0.08),0_18px_60px_rgba(0,0,0,0.55)]">
+          <div className="flex h-20 items-center justify-between border-b border-[#634BFF]/25 px-8 sm:px-10">
+            <div className="font-display text-[2rem] font-black uppercase tracking-[-0.05em] text-[#5f45ff]">
+              NOC CONTROL
             </div>
-            <div className="hidden font-label-ui text-[11px] uppercase tracking-[0.28em] text-white/45 sm:block">
-              Mission Control
+
+            <div className="hidden items-center md:flex">
+              <span className="border-b-2 border-[#634BFF] pb-1 font-display text-[2rem] font-bold tracking-[-0.05em] text-[#5f45ff]">
+                Mission Status: Active
+              </span>
             </div>
-          </div>
 
-          <nav className="hidden items-center gap-8 font-label-ui text-[11px] uppercase tracking-[0.26em] text-white/60 md:flex">
-            <a href="#pipeline" className="transition hover:text-white">
-              Pipeline
-            </a>
-            <a href="#flows" className="transition hover:text-white">
-              Demo Flows
-            </a>
-            <a href="#contract" className="transition hover:text-white">
-              Incident Record
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="hidden rounded-sm border border-white/12 px-4 py-2 font-label-ui text-[11px] uppercase tracking-[0.24em] text-white/80 transition hover:border-white/30 hover:text-white sm:inline-flex"
-            >
-              Open Dashboard
-            </Link>
             <a
               href="#flows"
-              className="trigger-glow inline-flex rounded-sm bg-[linear-gradient(135deg,#634BFF_0%,#8B5CF6_100%)] px-4 py-2 font-label-ui text-[11px] uppercase tracking-[0.24em] text-white transition hover:brightness-110"
+              className="trigger-glow inline-flex h-11 items-center justify-center rounded-[2px] bg-[linear-gradient(135deg,#634BFF_0%,#8E6CFF_100%)] px-6 font-label-ui text-[0.8rem] uppercase tracking-[0.28em] text-white transition hover:brightness-110"
             >
-              Trigger Demo
+              Trigger Bug
             </a>
           </div>
-        </div>
-      </header>
 
-      <section className="relative min-h-[100svh] border-b border-white/8 px-5 pt-24 pb-12 sm:px-8 lg:px-10">
-        <div className="mx-auto grid min-h-[calc(100svh-6rem)] max-w-[1500px] items-end gap-14 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="relative flex flex-col justify-between py-8">
-            <div className="absolute inset-y-0 right-[-8%] hidden w-[38rem] bg-[radial-gradient(circle_at_center,rgba(99,75,255,0.20),transparent_62%)] lg:block" />
-
-            <div className="relative z-10 max-w-4xl">
-              <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[#634BFF]/30 bg-[#634BFF]/8 px-4 py-2">
-                <span className="h-2 w-2 rounded-full bg-[#10B981]" />
-                <span className="font-label-ui text-[11px] uppercase tracking-[0.28em] text-[#D9D4FF]">
-                  Live incident loop active
-                </span>
-              </div>
-
-              <div className="mb-5 font-label-ui text-[12px] uppercase tracking-[0.4em] text-white/40">
-                Autonomous incident repair for live production systems
-              </div>
-
-              <h1 className="font-display max-w-5xl text-5xl font-black uppercase leading-[0.92] tracking-[-0.04em] text-white sm:text-7xl xl:text-[6.3rem]">
-                The self-healing control plane for code, approval, escalation,
-                and deploy.
-              </h1>
-
-              <p className="mt-8 max-w-2xl text-lg leading-8 text-white/70 sm:text-xl">
-                DeepOps watches a live app, detects failures in real time,
-                understands the codebase, writes the fix, deploys it, and only
-                calls the human when the blast radius demands it.
-              </p>
-
-              <div className="mt-10 flex flex-wrap gap-4">
-                <Link
-                  href="/dashboard"
-                  className="trigger-glow inline-flex items-center rounded-sm bg-[linear-gradient(135deg,#634BFF_0%,#8B5CF6_100%)] px-7 py-4 font-display text-base font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
-                >
-                  Open Mission Control
-                </Link>
-                <a
-                  href="#contract"
-                  className="inline-flex items-center rounded-sm border border-white/12 px-7 py-4 font-display text-base font-bold uppercase tracking-[0.08em] text-white/80 transition hover:border-white/30 hover:text-white"
-                >
-                  View Incident Contract
-                </a>
-              </div>
-            </div>
-
-            <div className="relative z-10 mt-14 flex flex-wrap gap-8 font-label-ui text-[11px] uppercase tracking-[0.26em] text-white/55">
-              <div>
-                <div className="mb-2 text-[#10B981]">Flow A</div>
-                <div className="text-white">Autonomous auto-fix</div>
-              </div>
-              <div>
-                <div className="mb-2 text-[#EB5424]">Flow B</div>
-                <div className="text-white">Approval and suggestion loop</div>
-              </div>
-              <div>
-                <div className="mb-2 text-[#6366F1]">Flow C</div>
-                <div className="text-white">Bland AI voice escalation</div>
-              </div>
-            </div>
-          </div>
-
-          <aside className="glass-panel command-glow relative overflow-hidden rounded-2xl p-6 sm:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,75,255,0.16),transparent_40%)]" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-label-ui text-[11px] uppercase tracking-[0.28em] text-white/45">
-                    Operator surface
-                  </div>
-                  <div className="mt-2 font-display text-2xl font-bold uppercase tracking-tight">
-                    One record. One queue. One decision loop.
-                  </div>
-                </div>
-                <div className="rounded-full border border-white/12 px-3 py-1 font-label-ui text-[10px] uppercase tracking-[0.24em] text-[#10B981]">
-                  Live
-                </div>
-              </div>
-
-              <div className="mt-8 space-y-5">
-                {dashboardCapabilities.map((capability) => (
+          <div className="grid min-h-[calc(100svh-120px)] grid-cols-[94px_minmax(0,1fr)]">
+            <aside className="border-r border-[#634BFF]/15 bg-black pt-36">
+              <div className="flex flex-col gap-6">
+                {heroRailItems.map((item) => (
                   <div
-                    key={capability}
-                    className="border-l border-white/12 pl-4 text-sm leading-6 text-white/68"
+                    key={item.key}
+                    className={`flex h-[68px] items-center justify-center transition ${
+                      item.active
+                        ? "bg-[#1a1a1a] text-[#634BFF]"
+                        : "text-white/75"
+                    }`}
                   >
-                    {capability}
+                    <RailIcon icon={item.key} />
                   </div>
                 ))}
               </div>
+            </aside>
 
-              <div className="mt-8 rounded-xl border border-white/10 bg-black/55 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-label-ui text-[10px] uppercase tracking-[0.24em] text-white/40">
-                      Current mission
+            <div className="relative min-h-[920px] overflow-hidden">
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-33"
+                style={{ backgroundImage: `url('${serverRackImage}')` }}
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,#000000_0%,#000000_37%,rgba(0,0,0,0.84)_50%,rgba(0,0,0,0.62)_64%,rgba(14,7,25,0.76)_100%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,75,255,0.16),transparent_36%)]" />
+              <div className="absolute inset-y-0 left-[33%] hidden w-px bg-white/6 lg:block" />
+
+              <div className="relative z-10 flex min-h-[920px] items-end">
+                <div className="w-full max-w-[760px] px-10 pb-20 pt-24 sm:px-16 lg:px-20">
+                  <div className="mb-10 inline-flex items-center gap-3 rounded-full border border-[#634BFF]/25 bg-[#634BFF]/6 px-5 py-2.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#634BFF]" />
+                    <span className="font-label-ui text-[0.72rem] uppercase tracking-[0.38em] text-[#8B7CFF]">
+                      System Integrity: Nominal
+                    </span>
+                  </div>
+
+                  <h1 className="font-display text-[4.5rem] font-black leading-[0.92] tracking-[-0.08em] text-white sm:text-[6rem] xl:text-[7.6rem]">
+                    <span className="block">The </span>
+                    <span className="block bg-[linear-gradient(90deg,#7DE4FF_0%,#C55CFF_55%,#654BFF_100%)] bg-clip-text text-transparent">
+                      Self-Healing
+                    </span>
+                    <span className="block">Codebase Agent</span>
+                  </h1>
+
+                  <p className="mt-10 max-w-[700px] text-[1.18rem] leading-[1.8] text-white/62 sm:text-[1.3rem]">
+                    DeepOps gives your team an autonomous command layer that
+                    monitors live failures, diagnoses root cause, drafts the
+                    remediation path, and only breaks the glass when a human
+                    decision is actually needed.
+                  </p>
+
+                  <div className="mt-14 flex flex-wrap gap-7">
+                    <Link
+                      href="/dashboard"
+                      className="inline-flex min-h-[76px] min-w-[310px] items-center justify-center rounded-[2px] bg-[linear-gradient(135deg,#634BFF_0%,#7B5CFF_100%)] px-8 font-display text-[1.05rem] font-bold tracking-[-0.03em] text-white transition hover:brightness-110"
+                    >
+                      Deploy Mission Control
+                    </Link>
+                    <a
+                      href="#contract"
+                      className="inline-flex min-h-[76px] min-w-[310px] items-center justify-center rounded-[2px] border border-white/10 bg-transparent px-8 font-display text-[1.05rem] font-bold tracking-[-0.03em] text-white transition hover:border-white/24 hover:bg-white/[0.03]"
+                    >
+                      Read Documentation
+                    </a>
+                  </div>
+
+                  <div className="mt-28 flex flex-wrap gap-10 font-label-ui text-[0.74rem] uppercase tracking-[0.28em]">
+                    <div>
+                      <div className="mb-3 text-[#73DAFF]">Latency</div>
+                      <div className="text-[1rem] tracking-[0.16em] text-white">
+                        1.2ms
+                      </div>
                     </div>
-                    <div className="mt-2 font-display text-lg font-bold uppercase">
-                      Search outage escalation
+                    <div>
+                      <div className="mb-3 text-[#D873FF]">Uptime</div>
+                      <div className="text-[1rem] tracking-[0.16em] text-white">
+                        99.999%
+                      </div>
                     </div>
-                  </div>
-                  <div className="rounded-full border border-[#6366F1]/35 px-3 py-1 font-label-ui text-[10px] uppercase tracking-[0.22em] text-[#C7CCFF]">
-                    Critical
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-3 font-label-ui text-[11px] uppercase tracking-[0.18em] text-white/55">
-                  <div className="flex items-center justify-between border-b border-white/8 pb-3">
-                    <span>Status</span>
-                    <span className="text-white">awaiting_approval</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-white/8 pb-3">
-                    <span>Next action</span>
-                    <span className="text-white">Call operator via Bland</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Deploy path</span>
-                    <span className="text-white">TrueFoundry callback pending</span>
+                    <div>
+                      <div className="mb-3 text-[#634BFF]">Threats</div>
+                      <div className="text-[1rem] tracking-[0.16em] text-white">
+                        0 Neutralized
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </aside>
+          </div>
         </div>
       </section>
 
