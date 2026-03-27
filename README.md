@@ -4,7 +4,7 @@ An autonomous agent that monitors a live app, detects errors in real-time, diagn
 
 Built for the **Deep Agents Hackathon** (March 27, 2026).
 
-![Architecture](deepops-architecture.svg)
+![Architecture](docs/deepops-architecture.svg)
 
 ## How It Works
 
@@ -26,9 +26,9 @@ Error Detected → Ingested → Stored → Diagnosed → Fixed → Auth Check �
 
 | File | Description |
 |------|-------------|
-| `deepops-guide.md` | Full build guide with architecture, implementation steps, and demo script |
-| `deepops-architecture.svg` | Visual architecture diagram |
-| `deepops-dashboard.jsx` | React dashboard component for the live demo UI |
+| `docs/deepops-guide.md` | Full build guide with architecture, implementation steps, and demo script |
+| `docs/deepops-architecture.svg` | Visual architecture diagram |
+| `docs/deepops-dashboard.jsx` | React dashboard component for the live demo UI |
 
 ## Sponsor Integrations
 
