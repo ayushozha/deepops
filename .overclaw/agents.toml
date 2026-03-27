@@ -1,0 +1,5 @@
+#  OverClaw agent registry — use: overclaw agent register / list / remove / update 
+
+agents = [
+    {name = "deepops-person-a", entrypoint = "agents.person_a_agent:run"},
+]
