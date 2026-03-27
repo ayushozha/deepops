@@ -241,7 +241,7 @@ export default function Home() {
           </div>
 
           <div className="grid min-h-[calc(100svh-120px)] grid-cols-[94px_minmax(0,1fr)]">
-            <aside className="border-r border-[#634BFF]/15 bg-black pt-36">
+            <aside className="border-r border-[#634BFF]/15 bg-black pt-20">
               <div className="flex flex-col gap-6">
                 {heroRailItems.map((item) => (
                   <div
@@ -258,7 +258,7 @@ export default function Home() {
               </div>
             </aside>
 
-            <div className="relative min-h-[920px] overflow-hidden">
+            <div className="relative min-h-0 overflow-hidden">
               <div
                 className="absolute inset-0 bg-cover bg-center opacity-33"
                 style={{ backgroundImage: `url('${serverRackImage}')` }}
@@ -267,16 +267,16 @@ export default function Home() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,75,255,0.16),transparent_36%)]" />
               <div className="absolute inset-y-0 left-[33%] hidden w-px bg-white/6 lg:block" />
 
-              <div className="relative z-10 flex min-h-[920px] items-end">
-                <div className="w-full max-w-[760px] px-10 pb-20 pt-24 sm:px-16 lg:px-20">
-                  <div className="mb-10 inline-flex items-center gap-3 rounded-full border border-[#634BFF]/25 bg-[#634BFF]/6 px-5 py-2.5">
+              <div className="relative z-10 flex min-h-0 items-end">
+                <div className="w-full max-w-[760px] px-10 pb-10 pt-14 sm:px-16 lg:px-20">
+                  <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-[#634BFF]/25 bg-[#634BFF]/6 px-5 py-2.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#634BFF]" />
                     <span className="font-label-ui text-[0.72rem] uppercase tracking-[0.38em] text-[#8B7CFF]">
                       System Integrity: Nominal
                     </span>
                   </div>
 
-                  <h1 className="font-display text-[4.5rem] font-black leading-[0.92] tracking-[-0.08em] text-white sm:text-[6rem] xl:text-[7.6rem]">
+                  <h1 className="font-display text-[3.5rem] font-black leading-[0.92] tracking-[-0.08em] text-white sm:text-[4.5rem] xl:text-[5.5rem]">
                     <span className="block">The </span>
                     <span className="block bg-[linear-gradient(90deg,#7DE4FF_0%,#C55CFF_55%,#654BFF_100%)] bg-clip-text text-transparent">
                       Self-Healing
@@ -284,29 +284,29 @@ export default function Home() {
                     <span className="block">Codebase Agent</span>
                   </h1>
 
-                  <p className="mt-10 max-w-[700px] text-[1.18rem] leading-[1.8] text-white/62 sm:text-[1.3rem]">
+                  <p className="mt-6 max-w-[700px] text-[1.05rem] leading-[1.7] text-white/62 sm:text-[1.15rem]">
                     DeepOps gives your team an autonomous command layer that
                     monitors live failures, diagnoses root cause, drafts the
                     remediation path, and only breaks the glass when a human
                     decision is actually needed.
                   </p>
 
-                  <div className="mt-14 flex flex-wrap gap-7">
+                  <div className="mt-8 flex flex-wrap gap-5">
                     <Link
                       href="/dashboard"
-                      className="inline-flex min-h-[76px] min-w-[310px] items-center justify-center rounded-[2px] bg-[linear-gradient(135deg,#634BFF_0%,#7B5CFF_100%)] px-8 font-display text-[1.05rem] font-bold tracking-[-0.03em] text-white transition hover:brightness-110"
+                      className="inline-flex min-h-[56px] min-w-[260px] items-center justify-center rounded-[2px] bg-[linear-gradient(135deg,#634BFF_0%,#7B5CFF_100%)] px-6 font-display text-[0.95rem] font-bold tracking-[-0.03em] text-white transition hover:brightness-110"
                     >
                       Deploy Mission Control
                     </Link>
                     <a
                       href="#contract"
-                      className="inline-flex min-h-[76px] min-w-[310px] items-center justify-center rounded-[2px] border border-white/10 bg-transparent px-8 font-display text-[1.05rem] font-bold tracking-[-0.03em] text-white transition hover:border-white/24 hover:bg-white/[0.03]"
+                      className="inline-flex min-h-[56px] min-w-[260px] items-center justify-center rounded-[2px] border border-white/10 bg-transparent px-6 font-display text-[0.95rem] font-bold tracking-[-0.03em] text-white transition hover:border-white/24 hover:bg-white/[0.03]"
                     >
                       Read Documentation
                     </a>
                   </div>
 
-                  <div className="mt-28 flex flex-wrap gap-10 font-label-ui text-[0.74rem] uppercase tracking-[0.28em]">
+                  <div className="mt-10 flex flex-wrap gap-10 font-label-ui text-[0.74rem] uppercase tracking-[0.28em]">
                     <div>
                       <div className="mb-3 text-[#73DAFF]">Latency</div>
                       <div className="text-[1rem] tracking-[0.16em] text-white">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useApproval } from "./hooks/useApproval";
 import { useBackendHealth } from "./hooks/useBackendHealth";
 import { useIncidents } from "./hooks/useIncidents";
@@ -47,11 +48,11 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 const NAV_ITEMS = [
-  { label: "Incidents", icon: "emergency_home", active: true },
-  { label: "Metrics", icon: "insert_chart", active: false },
-  { label: "Agent Logs", icon: "terminal", active: false },
-  { label: "Overmind Traces", icon: "visibility", active: false },
-  { label: "Settings", icon: "settings", active: false },
+  { label: "Incidents", icon: "emergency_home", href: "/dashboard" },
+  { label: "Metrics", icon: "insert_chart", href: "/metrics" },
+  { label: "Agent Logs", icon: "terminal", href: "#" },
+  { label: "Overmind Traces", icon: "visibility", href: "#" },
+  { label: "Settings", icon: "settings", href: "/settings" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -171,11 +172,18 @@ export default function DashboardPage() {
     try {
       const bugs = ["calculate_zero", "user_missing", "search_timeout"];
       const key = bugs[Math.floor(Math.random() * bugs.length)];
-      await fetch("/api/ingest/demo-trigger", {
+      const res = await fetch("/api/ingest/demo-trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bug_key: key }),
       });
+      const data = await res.json();
+      const incidentId = data?.incident?.incident_id;
+      if (incidentId) {
+        await fetch(`/api/agent/run-once?incident_id=${incidentId}`, {
+          method: "POST",
+        });
+      }
       refreshIncidents();
     } catch {
       // silently ignore
@@ -252,20 +260,30 @@ export default function DashboardPage() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href="#"
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                item.active
-                  ? "text-[#634BFF] border-l-2 border-[#634BFF] bg-[#634BFF]/5"
-                  : "text-white/50 hover:text-white hover:bg-white/5"
-              }`}
-            >
-              <span className="material-symbols-outlined">{item.icon}</span>
-              <span>{item.label}</span>
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = item.href === "/dashboard";
+            const classes = `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+              isActive
+                ? "text-[#634BFF] border-l-2 border-[#634BFF] bg-[#634BFF]/5"
+                : "text-white/50 hover:text-white hover:bg-white/5"
+            }`;
+
+            if (item.href === "#") {
+              return (
+                <a key={item.label} href="#" className={classes}>
+                  <span className="material-symbols-outlined">{item.icon}</span>
+                  <span>{item.label}</span>
+                </a>
+              );
+            }
+
+            return (
+              <Link key={item.label} href={item.href} className={classes}>
+                <span className="material-symbols-outlined">{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="px-4 mt-auto">
