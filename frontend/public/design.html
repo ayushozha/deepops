@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DeepOps | Mission Control</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+    darkMode: "class",
+    theme: {
+        extend: {
+            colors: {
+                "primary": "#634BFF",
+                "surface": "#000000",
+                "surface-container": "#0A0A0B",
+                "surface-container-high": "#121214",
+                "outline-variant": "rgba(69, 72, 79, 0.2)",
+                "on-surface": "#ECEDF6",
+                "on-surface-variant": "#A9ABB3",
+                "error": "#FF4B66",
+                "secondary": "#10B981"
+            },
+            fontFamily: {
+                "headline": ["Space Grotesk", "sans-serif"],
+                "body": ["Inter", "sans-serif"],
+                "mono": ["JetBrains Mono", "monospace"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+    },
+}
+</script>
+<style>
+.glass-panel { background: rgba(10, 10, 11, 0.6); backdrop-filter: blur(20px); }
+.pulse-high { animation: pulse-high 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse-high {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 20px rgba(255, 75, 102, 0.4); }
+    50% { opacity: 0.9; transform: scale(0.98); box-shadow: 0 0 40px rgba(255, 75, 102, 0.6); }
+}
+.indigo-glow { box-shadow: 0 0 50px -10px rgba(99, 75, 255, 0.3); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #45484f; border-radius: 10px; }
+</style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+
+<!-- Sidebar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col py-6 bg-surface w-64 border-r border-outline-variant z-50">
+    <div class="px-6 mb-10">
+        <h1 class="text-2xl font-bold tracking-tighter text-on-surface font-headline">DeepOps</h1>
+        <p class="font-headline text-[10px] uppercase tracking-widest text-on-surface-variant/60">Mission Control</p>
+    </div>
+    <nav class="flex-1 px-4 space-y-2">
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-primary border-l-2 border-primary bg-primary/5" href="#">
+            <span class="material-symbols-outlined">emergency_home</span><span>Incidents</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" href="#">
+            <span class="material-symbols-outlined">insert_chart</span><span>Metrics</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" href="#">
+            <span class="material-symbols-outlined">terminal</span><span>Agent Logs</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" href="#">
+            <span class="material-symbols-outlined">visibility</span><span>Overmind Traces</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high" href="#">
+            <span class="material-symbols-outlined">settings</span><span>Settings</span>
+        </a>
+    </nav>
+    <div class="px-4 mt-auto">
+        <button class="w-full py-4 px-6 rounded-xl bg-gradient-to-br from-error to-[#8A1F30] text-white font-headline font-bold tracking-tight shadow-lg shadow-error/20 active:scale-95 transition-transform duration-100 pulse-high">TRIGGER BUG</button>
+        <div class="mt-6 flex items-center gap-3 px-2">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary">person</span>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-on-surface">Active Engineer</p>
+                <p class="text-[10px] text-on-surface-variant uppercase">SRE-01 &bull; ON-CALL</p>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- Main Content -->
+<main class="ml-64 min-h-screen flex flex-col">
+    <!-- Top Bar: All 8 Sponsors -->
+    <header class="sticky top-0 w-full flex justify-between items-center px-8 h-16 bg-surface/80 backdrop-blur-xl z-40 border-b border-outline-variant">
+        <div class="flex items-center gap-6">
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#634BFF" href="#">Airbyte</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#C4302B" href="#">Aerospike</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#00B4D8" href="#">Macroscope</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#FF9900" href="#">Kiro</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#EB5424" href="#">Auth0</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#6366F1" href="#">Bland AI</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#10B981" href="#">TrueFoundry</a>
+            <a class="font-headline uppercase tracking-widest text-[10px] font-bold" style="color:#A855F7" href="#">Overmind</a>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/10 border border-secondary/20">
+                <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                <span class="text-[10px] font-headline uppercase font-bold text-secondary">Connected</span>
+            </div>
+            <span class="material-symbols-outlined text-xl text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+        </div>
+    </header>
+
+    <div class="p-8 grid grid-cols-12 gap-8">
+
+        <!-- Metrics Bar -->
+        <section class="col-span-12 grid grid-cols-4 gap-6 mb-2">
+            <div class="bg-surface-container rounded-xl p-4 flex flex-col border border-outline-variant">
+                <span class="text-[10px] font-headline uppercase tracking-widest text-on-surface-variant mb-1">Active Incidents</span>
+                <span class="text-3xl font-headline font-bold text-error">03</span>
+            </div>
+            <div class="bg-surface-container rounded-xl p-4 flex flex-col border border-outline-variant">
+                <span class="text-[10px] font-headline uppercase tracking-widest text-on-surface-variant mb-1">Auto-Resolved</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-headline font-bold text-secondary">01</span>
+                    <span class="text-xs text-secondary/60">of 3</span>
+                </div>
+            </div>
+            <div class="bg-surface-container rounded-xl p-4 flex flex-col border border-outline-variant">
+                <span class="text-[10px] font-headline uppercase tracking-widest text-on-surface-variant mb-1">Avg Resolution</span>
+                <span class="text-3xl font-headline font-bold">34<span class="text-lg font-light text-on-surface-variant ml-1">sec</span></span>
+            </div>
+            <div class="bg-surface-container rounded-xl p-4 flex flex-col border border-outline-variant">
+                <span class="text-[10px] font-headline uppercase tracking-widest text-on-surface-variant mb-1">Awaiting Approval</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-headline font-bold" style="color:#6366F1">01</span>
+                    <span class="text-[10px] text-on-surface-variant/60 font-mono">via Bland AI</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- LEFT COLUMN -->
+        <div class="col-span-12 lg:col-span-7 space-y-8">
+
+            <!-- Incident Cards -->
+            <div>
+                <h2 class="text-sm font-headline uppercase tracking-[0.2em] text-on-surface-variant/80 mb-4 flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-error"></span>Active Incidents
+                </h2>
+                <div class="space-y-4">
+                    <!-- INC-003: Critical -->
+                    <div class="bg-surface-container-high rounded-2xl p-6 border-l-4 border-error border border-outline-variant shadow-2xl">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-3">
+                                    <span class="font-mono text-xs text-error bg-error/10 px-2 py-0.5 rounded">INC-003</span>
+                                    <span class="px-2 py-0.5 rounded bg-error/10 text-error text-[10px] font-bold uppercase tracking-widest">CRITICAL</span>
+                                </div>
+                                <h3 class="text-lg font-headline font-semibold">TimeoutError in /search endpoint</h3>
+                            </div>
+                            <span class="text-[10px] font-mono text-on-surface-variant">6s ago</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-on-surface-variant text-sm font-mono bg-surface/50 p-3 rounded-lg border border-outline-variant">
+                            <span class="material-symbols-outlined text-base">description</span>demo-app/main.py:26
+                        </div>
+                    </div>
+                    <!-- INC-002: High -->
+                    <div class="bg-surface-container rounded-2xl p-6 border-l-4 border-[#FF9900] border border-outline-variant hover:border-on-surface-variant/30 transition-all cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="font-mono text-xs text-on-surface-variant">INC-002</span>
+                                <span class="px-2 py-0.5 rounded bg-[#FF9900]/10 text-[#FF9900] text-[10px] font-bold uppercase tracking-widest">HIGH</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-on-surface-variant">18s ago</span>
+                        </div>
+                        <h3 class="text-base font-headline text-on-surface/80">KeyError: 'name' in /user/unknown</h3>
+                        <p class="text-xs text-on-surface-variant mt-1 font-mono">demo-app/main.py:21</p>
+                    </div>
+                    <!-- INC-001: Medium / Resolved -->
+                    <div class="bg-surface-container rounded-2xl p-6 border border-outline-variant opacity-60 hover:opacity-100 transition-all cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-3">
+                                <span class="font-mono text-xs text-on-surface-variant">INC-001</span>
+                                <span class="px-2 py-0.5 rounded bg-[#FDE68A]/10 text-[#FDE68A] text-[10px] font-bold uppercase tracking-widest">MEDIUM</span>
+                                <span class="px-2 py-0.5 rounded bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-widest">RESOLVED</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-on-surface-variant">34s</span>
+                        </div>
+                        <h3 class="text-base font-headline text-on-surface/80">ZeroDivisionError in /calculate/0</h3>
+                        <p class="text-xs text-on-surface-variant mt-1 font-mono">demo-app/main.py:14</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pipeline: All 8 Stages -->
+            <div class="bg-surface-container rounded-3xl p-8 border border-outline-variant">
+                <h3 class="text-xs font-headline uppercase tracking-widest text-on-surface-variant mb-8">Autonomous Resolution Pipeline</h3>
+                <div class="flex justify-between relative">
+                    <div class="absolute top-4 left-0 w-full h-px bg-outline-variant z-0"></div>
+                    <div class="relative z-10 flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-black shadow-lg" style="background:#F87171"><span class="material-symbols-outlined text-lg">check</span></div>
+                        <span class="text-[9px] font-headline uppercase font-bold" style="color:#F87171">Detected</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Airbyte</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white" style="background:#C4302B"><span class="material-symbols-outlined text-lg">check</span></div>
+                        <span class="text-[9px] font-headline uppercase font-bold" style="color:#C4302B">Stored</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Aerospike</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white" style="background:#00B4D8"><span class="material-symbols-outlined text-lg">check</span></div>
+                        <span class="text-[9px] font-headline uppercase font-bold" style="color:#00B4D8">Diagnosing</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Macroscope</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-black" style="background:#FF9900"><span class="material-symbols-outlined text-lg">check</span></div>
+                        <span class="text-[9px] font-headline uppercase font-bold" style="color:#FF9900">Fixing</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Kiro</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-full blur-lg animate-pulse" style="background:rgba(235,84,36,0.4)"></div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white relative z-20" style="background:#EB5424"><span class="material-symbols-outlined text-lg animate-spin" style="animation-duration:3s">sync</span></div>
+                        </div>
+                        <span class="text-[9px] font-headline uppercase font-bold" style="color:#EB5424">Auth Check</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Auth0</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3 opacity-30">
+                        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant"><span class="material-symbols-outlined text-lg">call</span></div>
+                        <span class="text-[9px] font-headline uppercase">Calling...</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Bland AI</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3 opacity-30">
+                        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant"><span class="material-symbols-outlined text-lg">rocket_launch</span></div>
+                        <span class="text-[9px] font-headline uppercase">Deploying</span>
+                        <span class="text-[8px] text-on-surface-variant/50">TrueFoundry</span>
+                    </div>
+                    <div class="relative z-10 flex flex-col items-center gap-3 opacity-30">
+                        <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant"><span class="material-symbols-outlined text-lg">task_alt</span></div>
+                        <span class="text-[9px] font-headline uppercase">Resolved</span>
+                        <span class="text-[8px] text-on-surface-variant/50">Overmind</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnosis & Diff -->
+            <div class="grid grid-cols-2 gap-6">
+                <div class="bg-surface-container rounded-2xl p-6 border border-outline-variant">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">Autonomous Diagnosis</h4>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-mono text-secondary">96% CONFIDENCE</span>
+                            <div class="w-12 h-1 bg-surface-container-high rounded-full overflow-hidden"><div class="w-[96%] h-full bg-secondary"></div></div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-[10px] font-headline uppercase text-on-surface-variant/60 mb-1">Root Cause</p>
+                            <p class="text-sm leading-relaxed">The calculate endpoint divides by the raw path parameter without validating zero, so value 0 raises an unhandled ZeroDivisionError.</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-headline uppercase text-on-surface-variant/60 mb-1">Suggested Fix</p>
+                            <p class="text-sm leading-relaxed text-secondary font-medium">Add a guard clause before division and return a safe validation error when value is 0.</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-headline uppercase text-on-surface-variant/60 mb-1">Affected Components</p>
+                            <p class="text-sm font-mono text-on-surface-variant">demo-app/main.py &rarr; calculate endpoint</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-headline uppercase text-on-surface-variant/60 mb-1">Severity Reasoning</p>
+                            <p class="text-sm text-on-surface-variant">User-facing but isolated to one endpoint with a safe deterministic fix.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden">
+                    <div class="bg-surface-container px-4 py-2 border-b border-outline-variant flex justify-between items-center">
+                        <span class="text-[10px] font-mono text-on-surface-variant">diff: demo-app/main.py</span>
+                        <div class="flex gap-1.5">
+                            <div class="w-2 h-2 rounded-full bg-error/40"></div>
+                            <div class="w-2 h-2 rounded-full bg-secondary/40"></div>
+                        </div>
+                    </div>
+                    <div class="p-4 font-mono text-[11px] leading-loose overflow-x-auto">
+                        <div class="text-on-surface-variant/60">&nbsp; async def calculate(value: int):</div>
+                        <div class="text-on-surface-variant/60">&nbsp;&nbsp;&nbsp;&nbsp; logging.info(f"Calculating for {'{'}value{'}'}")</div>
+                        <div class="text-secondary">+&nbsp;&nbsp;&nbsp; if value == 0:</div>
+                        <div class="text-secondary">+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; raise HTTPException(400, "Cannot divide by zero")</div>
+                        <div class="text-on-surface-variant/60">&nbsp;&nbsp;&nbsp;&nbsp; result = 100 / value</div>
+                        <div class="text-on-surface-variant/60">&nbsp;&nbsp;&nbsp;&nbsp; return {"result": result}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="col-span-12 lg:col-span-5 space-y-8">
+
+            <!-- Sponsors -->
+            <div class="bg-surface-container rounded-3xl p-6 border border-outline-variant">
+                <h3 class="text-[10px] font-headline uppercase tracking-[0.2em] text-on-surface-variant/60 mb-6">Active Infrastructure Graph</h3>
+                <div class="flex flex-wrap gap-2">
+                    <div class="px-4 py-2 rounded-full bg-[#634BFF]/10 text-[#634BFF] text-[10px] font-bold tracking-widest border border-[#634BFF]/30">AIRBYTE</div>
+                    <div class="px-4 py-2 rounded-full bg-[#C4302B]/10 text-[#C4302B] text-[10px] font-bold tracking-widest border border-[#C4302B]/30">AEROSPIKE</div>
+                    <div class="px-4 py-2 rounded-full bg-[#00B4D8]/10 text-[#00B4D8] text-[10px] font-bold tracking-widest border border-[#00B4D8]/30">MACROSCOPE</div>
+                    <div class="px-4 py-2 rounded-full bg-[#FF9900]/10 text-[#FF9900] text-[10px] font-bold tracking-widest border border-[#FF9900]/30">KIRO</div>
+                    <div class="px-4 py-2 rounded-full bg-[#EB5424]/10 text-[#EB5424] text-[10px] font-bold tracking-widest border border-[#EB5424]/30">AUTH0</div>
+                    <div class="px-4 py-2 rounded-full bg-[#6366F1]/10 text-[#6366F1] text-[10px] font-bold tracking-widest border border-[#6366F1]/30">BLAND AI</div>
+                    <div class="px-4 py-2 rounded-full bg-[#10B981]/10 text-[#10B981] text-[10px] font-bold tracking-widest border border-[#10B981]/30">TRUEFOUNDRY</div>
+                    <div class="px-4 py-2 rounded-full bg-[#A855F7]/10 text-[#A855F7] text-[10px] font-bold tracking-widest border border-[#A855F7]/30">OVERMIND</div>
+                </div>
+            </div>
+
+            <!-- Bland AI Call Card -->
+            <div class="relative indigo-glow rounded-3xl">
+                <div class="relative bg-surface-container-high/90 backdrop-blur-xl rounded-3xl p-8 border border-primary/40 shadow-2xl overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
+                    <div class="flex items-center gap-6">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-primary rounded-full animate-ping opacity-20"></div>
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-[#4D39E6] flex items-center justify-center shadow-lg shadow-primary/40 relative z-10">
+                                <span class="material-symbols-outlined text-3xl text-white">call</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-headline uppercase font-bold text-primary tracking-widest">Bland AI Escalation</span>
+                                <span class="w-1 h-1 rounded-full bg-primary/40"></span>
+                                <span class="text-[10px] font-headline uppercase text-on-surface-variant">Live Call</span>
+                            </div>
+                            <h2 class="text-xl font-headline font-bold text-on-surface">Calling On-Call Engineer</h2>
+                            <p class="text-sm text-on-surface-variant mt-1">INC-002: KeyError on /user/unknown &mdash; high severity, requesting deployment approval...</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex gap-3">
+                        <button class="flex-1 py-3 bg-secondary/10 border border-secondary/30 rounded-xl text-secondary text-xs font-bold uppercase tracking-widest hover:bg-secondary/20 transition-all">Approve Deploy</button>
+                        <button class="flex-1 py-3 bg-primary/10 border border-primary/30 rounded-xl text-primary text-xs font-bold uppercase tracking-widest hover:bg-primary/20 transition-all">Suggest Changes</button>
+                        <button class="px-6 py-3 bg-error/10 border border-error/30 rounded-xl text-error text-xs font-bold uppercase tracking-widest hover:bg-error/20 transition-all">Reject</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Logs -->
+            <div class="bg-surface-container-high rounded-3xl border border-outline-variant overflow-hidden h-[400px] flex flex-col">
+                <div class="bg-surface-container px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+                    <h4 class="text-xs font-headline uppercase tracking-widest text-on-surface-variant">System Activity Log</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                        <span class="text-[10px] font-mono text-on-surface-variant">SSE STREAMING</span>
+                    </div>
+                </div>
+                <div class="flex-1 p-6 font-mono text-[11px] leading-loose text-on-surface-variant/80 overflow-y-auto space-y-1">
+                    <div><span style="color:#634BFF">[14:22:00]</span> <span class="text-on-surface">Airbyte:</span> Ingested ZeroDivisionError from /calculate/0</div>
+                    <div><span style="color:#C4302B">[14:22:03]</span> <span class="text-on-surface">Aerospike:</span> INC-001 stored in incidents namespace</div>
+                    <div><span style="color:#00B4D8">[14:22:06]</span> <span class="text-on-surface">Macroscope:</span> Querying codebase context for demo-app/main.py</div>
+                    <div style="color:#10B981"><span style="color:#00B4D8">[14:22:15]</span> Macroscope: Root cause located &mdash; missing zero guard on division</div>
+                    <div><span style="color:#FF9900">[14:22:15]</span> <span class="text-on-surface">Kiro:</span> Generating spec-driven fix patch</div>
+                    <div><span style="color:#EB5424">[14:22:25]</span> <span class="text-on-surface">Auth0:</span> Severity=medium &rarr; auto-deploy approved</div>
+                    <div><span style="color:#10B981">[14:22:26]</span> <span class="text-on-surface">TrueFoundry:</span> Deploying fix to deepops-demo-app</div>
+                    <div style="color:#22C55E"><span style="color:#A855F7">[14:22:34]</span> Overmind: INC-001 resolved in 34s. Trace logged.</div>
+                    <div><span style="color:#634BFF">[14:22:40]</span> <span class="text-on-surface">Airbyte:</span> Ingested KeyError from /user/unknown</div>
+                    <div><span style="color:#C4302B">[14:22:43]</span> <span class="text-on-surface">Aerospike:</span> INC-002 stored</div>
+                    <div><span style="color:#00B4D8">[14:22:46]</span> <span class="text-on-surface">Macroscope:</span> Analyzing /user endpoint...</div>
+                    <div><span style="color:#EB5424">[14:22:55]</span> <span class="text-on-surface">Auth0:</span> Severity=high &rarr; manual approval required</div>
+                    <div style="color:#6366F1"><span style="color:#6366F1">[14:23:02]</span> Bland AI: Initiating voice call to on-call engineer for INC-002</div>
+                    <div class="flex items-center gap-2"><span style="color:#6366F1">[14:23:45]</span> <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> <span class="italic">Awaiting engineer approval via phone...</span></div>
+                </div>
+            </div>
+
+            <!-- Overmind Traces -->
+            <div class="bg-surface-container rounded-2xl p-6 border border-outline-variant">
+                <h4 class="text-xs font-headline uppercase tracking-widest text-on-surface-variant mb-4">Overmind Traces</h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-[11px] font-mono pb-2 border-b border-outline-variant">
+                        <span style="color:#A855F7" class="font-bold">INC-001</span>
+                        <div class="flex gap-4 text-on-surface-variant">
+                            <span>LLM: <span class="text-[#FDE68A]">320ms</span></span>
+                            <span>Tokens: <span style="color:#A855F7">1,240</span></span>
+                            <span>Cost: <span class="text-secondary">$0.018</span></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] font-mono pb-2 border-b border-outline-variant">
+                        <span style="color:#A855F7" class="font-bold">INC-002</span>
+                        <div class="flex gap-4 text-on-surface-variant">
+                            <span>LLM: <span class="text-[#FDE68A]">480ms</span></span>
+                            <span>Tokens: <span style="color:#A855F7">1,680</span></span>
+                            <span>Cost: <span class="text-secondary">$0.025</span></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] font-mono">
+                        <span style="color:#A855F7" class="font-bold">INC-003</span>
+                        <div class="flex gap-4 text-on-surface-variant">
+                            <span>LLM: <span class="text-[#FDE68A]">---</span></span>
+                            <span class="italic text-on-surface-variant/50">diagnosing...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-surface-container rounded-2xl p-6 border border-outline-variant">
+                <div class="flex items-center justify-between opacity-50">
+                    <span class="text-[10px] font-headline uppercase tracking-widest">DeepOps v1.0 &bull; Deep Agents Hackathon 2026</span>
+                    <div class="flex gap-4">
+                        <span class="material-symbols-outlined text-base cursor-pointer hover:text-on-surface">support</span>
+                        <span class="material-symbols-outlined text-base cursor-pointer hover:text-on-surface">help_center</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body></html>
