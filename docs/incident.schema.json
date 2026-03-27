@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deepops.local/incident.schema.json",
+  "title": "DeepOps Incident Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "incident_id",
+    "status",
+    "severity",
+    "service",
+    "environment",
+    "created_at_ms",
+    "updated_at_ms",
+    "source",
+    "diagnosis",
+    "fix",
+    "approval",
+    "deployment",
+    "observability",
+    "timeline"
+  ],
+  "properties": {
+    "incident_id": {
+      "type": "string",
+      "description": "Stable incident identifier. UUID preferred."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "detected",
+        "stored",
+        "diagnosing",
+        "fixing",
+        "gating",
+        "awaiting_approval",
+        "deploying",
+        "resolved",
+        "blocked",
+        "failed"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "service": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "created_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "updated_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "resolution_time_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "diagnosis": {
+      "$ref": "#/$defs/diagnosis"
+    },
+    "fix": {
+      "$ref": "#/$defs/fix"
+    },
+    "approval": {
+      "$ref": "#/$defs/approval"
+    },
+    "deployment": {
+      "$ref": "#/$defs/deployment"
+    },
+    "observability": {
+      "$ref": "#/$defs/observability"
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/timeline_event"
+      }
+    }
+  },
+  "$defs": {
+    "nullable_string": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "string_list": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "path",
+        "error_type",
+        "error_message",
+        "source_file",
+        "timestamp_ms"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "demo-app",
+            "airbyte"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "error_type": {
+          "type": "string"
+        },
+        "error_message": {
+          "type": "string"
+        },
+        "source_file": {
+          "type": "string"
+        },
+        "timestamp_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "raw_payload": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "diagnosis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "root_cause",
+        "suggested_fix",
+        "affected_components",
+        "confidence"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "complete",
+            "failed"
+          ]
+        },
+        "root_cause": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "suggested_fix": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "affected_components": {
+          "$ref": "#/$defs/string_list"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "severity_reasoning": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "macroscope_context": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "started_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completed_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "fix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "spec_markdown",
+        "diff_preview",
+        "files_changed",
+        "test_plan"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "complete",
+            "failed"
+          ]
+        },
+        "spec_markdown": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "diff_preview": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "files_changed": {
+          "$ref": "#/$defs/string_list"
+        },
+        "test_plan": {
+          "$ref": "#/$defs/string_list"
+        },
+        "started_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completed_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "mode",
+        "status"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "skipped"
+          ]
+        },
+        "channel": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "decider": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "bland_call_id": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "notes": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "decision_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "status"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "truefoundry"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "succeeded",
+            "failed",
+            "skipped"
+          ]
+        },
+        "service_name": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "environment": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "commit_sha": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "deploy_url": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "started_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "completed_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "failure_reason": {
+          "$ref": "#/$defs/nullable_string"
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overmind_trace_id",
+        "overmind_trace_url",
+        "airbyte_sync_id",
+        "auth0_decision_id"
+      ],
+      "properties": {
+        "overmind_trace_id": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "overmind_trace_url": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "airbyte_sync_id": {
+          "$ref": "#/$defs/nullable_string"
+        },
+        "auth0_decision_id": {
+          "$ref": "#/$defs/nullable_string"
+        }
+      }
+    },
+    "timeline_event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at_ms",
+        "status",
+        "actor",
+        "message",
+        "sponsor"
+      ],
+      "properties": {
+        "at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string"
+        },
+        "actor": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "sponsor": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "incident_id": "inc-9d8580b4-27fc-4d3e-b451-2d06a7f3c5ba",
+  "status": "resolved",
+  "severity": "medium",
+  "service": "deepops-demo-app",
+  "environment": "hackathon",
+  "created_at_ms": 1774647600000,
+  "updated_at_ms": 1774647634000,
+  "resolution_time_ms": 34000,
+  "source": {
+    "provider": "airbyte",
+    "path": "/calculate/0",
+    "error_type": "ZeroDivisionError",
+    "error_message": "division by zero",
+    "source_file": "demo-app/main.py",
+    "timestamp_ms": 1774647600000,
+    "fingerprint": "calculate-zero-division",
+    "raw_payload": {
+      "method": "GET",
+      "status_code": 500
+    }
+  },
+  "diagnosis": {
+    "status": "complete",
+    "root_cause": "The calculate endpoint divides by the raw path parameter without validating zero, so value 0 raises an unhandled ZeroDivisionError.",
+    "suggested_fix": "Add a guard clause before division and return a safe validation error when value is 0.",
+    "affected_components": [
+      "demo-app/main.py",
+      "calculate endpoint"
+    ],
+    "confidence": 0.96,
+    "severity_reasoning": "The bug is user-facing but isolated to one endpoint and has a safe deterministic fix.",
+    "macroscope_context": "calculate() is only called by the /calculate/{value} route and has no downstream writes.",
+    "started_at_ms": 1774647606000,
+    "completed_at_ms": 1774647615000
+  },
+  "fix": {
+    "status": "complete",
+    "spec_markdown": "# Fix Specification\n\n## Requirements\n- Prevent division by zero in calculate\n- Preserve existing response contract for non-zero input\n\n## Acceptance Criteria\n- /calculate/0 returns a handled error response\n- non-zero values still return result",
+    "diff_preview": "@@ -9,5 +9,8 @@\n async def calculate(value: int):\n     logging.info(f\"Calculating for {value}\")\n+    if value == 0:\n+        raise HTTPException(status_code=400, detail=\"Cannot divide by zero\")\n     result = 100 / value\n     return {\"result\": result}\n",
+    "files_changed": [
+      "demo-app/main.py"
+    ],
+    "test_plan": [
+      "Call /calculate/0 and confirm handled error response",
+      "Call /calculate/5 and confirm result is unchanged"
+    ],
+    "started_at_ms": 1774647615000,
+    "completed_at_ms": 1774647624000
+  },
+  "approval": {
+    "required": false,
+    "mode": "auto",
+    "status": "approved",
+    "channel": "auth0-rbac",
+    "decider": "auth0:auto-deploy",
+    "bland_call_id": null,
+    "notes": "Medium severity matched auto-deploy rule.",
+    "decision_at_ms": 1774647625000
+  },
+  "deployment": {
+    "provider": "truefoundry",
+    "status": "succeeded",
+    "service_name": "deepops-demo-app",
+    "environment": "hackathon",
+    "commit_sha": "abc1234",
+    "deploy_url": "https://deepops-demo.truefoundry.app",
+    "started_at_ms": 1774647626000,
+    "completed_at_ms": 1774647634000,
+    "failure_reason": null
+  },
+  "observability": {
+    "overmind_trace_id": "ovr-trace-123",
+    "overmind_trace_url": "https://console.overmindlab.ai/traces/ovr-trace-123",
+    "airbyte_sync_id": "airbyte-sync-001",
+    "auth0_decision_id": "auth0-decision-001"
+  },
+  "timeline": [
+    {
+      "at_ms": 1774647600000,
+      "status": "detected",
+      "actor": "airbyte",
+      "message": "Airbyte ingested ZeroDivisionError from /calculate/0",
+      "sponsor": "Airbyte",
+      "metadata": {
+        "path": "/calculate/0"
+      }
+    },
+    {
+      "at_ms": 1774647603000,
+      "status": "stored",
+      "actor": "infra",
+      "message": "Incident stored in Aerospike",
+      "sponsor": "Aerospike",
+      "metadata": null
+    },
+    {
+      "at_ms": 1774647606000,
+      "status": "diagnosing",
+      "actor": "agent-core",
+      "message": "Macroscope query started for demo-app/main.py",
+      "sponsor": "Macroscope",
+      "metadata": null
+    },
+    {
+      "at_ms": 1774647615000,
+      "status": "fixing",
+      "actor": "agent-core",
+      "message": "Kiro generated patch proposal",
+      "sponsor": "Kiro",
+      "metadata": {
+        "files_changed": 1
+      }
+    },
+    {
+      "at_ms": 1774647625000,
+      "status": "gating",
+      "actor": "auth-gate",
+      "message": "Auth0 approved medium severity for auto-deploy",
+      "sponsor": "Auth0",
+      "metadata": {
+        "severity": "medium"
+      }
+    },
+    {
+      "at_ms": 1774647626000,
+      "status": "deploying",
+      "actor": "deployer",
+      "message": "TrueFoundry deployment started",
+      "sponsor": "TrueFoundry",
+      "metadata": {
+        "service": "deepops-demo-app"
+      }
+    },
+    {
+      "at_ms": 1774647634000,
+      "status": "resolved",
+      "actor": "deployer",
+      "message": "Deployment succeeded and incident resolved",
+      "sponsor": "Overmind",
+      "metadata": {
+        "trace_id": "ovr-trace-123"
+      }
+    }
+  ]
+}

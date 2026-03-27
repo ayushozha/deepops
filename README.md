@@ -29,6 +29,9 @@ Error Detected → Ingested → Stored → Diagnosed → Fixed → Auth Check �
 | `docs/deepops-guide.md` | Full build guide with architecture, implementation steps, and demo script |
 | `docs/deepops-architecture.svg` | Visual architecture diagram |
 | `docs/deepops-dashboard.jsx` | React dashboard component for the live demo UI |
+| `docs/implementation-alignment.md` | Canonical team contract: lifecycle, ownership, integration order |
+| `docs/incident.schema.json` | Machine-readable shared incident data structure |
+| `docs/incident-example.json` | Concrete example incident for backend and dashboard development |
 
 ## Sponsor Integrations
 
