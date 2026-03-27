@@ -9,8 +9,9 @@ execution_notes:
   - PB-001 と PB-002 と PB-003 は並列で着手する。
   - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
   - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
-  - PB-008 で Auth0 SDK v4 の導入方針と `/auth/*` ルートを固定してから PB-009 と PB-010 に着手する。
-  - PB-009 は公開 landing と auth 導線、PB-010 は dashboard の session-aware UI に集中し、最後に PB-011 で callback / env / build を通しで確認する。
+  - PB-008 は Codex が先に着手し、Auth0 SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`, `/auth/*` の前提を固定する。
+  - PB-009 は Claude が公開 landing と共通 auth UI を先行実装してよいが、最終的な login/logout 接続は PB-008 完了後に合わせる。
+  - PB-010 は PB-008 完了後に dashboard の session-aware 分岐へ進める。PB-011 は最後に callback / env / lint/build をまとめて締める。
 context:
   current_state:
     - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard shell が入っている。
@@ -140,8 +141,8 @@ tasks:
       - frontend で Auth0 SDK v4 が参照可能
       - `/auth/login` と `/auth/logout` の導線を置ける基盤がある
       - `proxy.ts` 前提の構成で `/auth/*` を使う方針がコード上でも明確
-    status: pending
-    agent: claude.task
+    status: ready
+    agent: codex.task
   - task_id: PB-009
     title: "公開 landing と共通 auth UI に login/logout/profile 導線を追加する"
     description: |
@@ -152,7 +153,7 @@ tasks:
       - `/` から login を開始できる
       - logout 導線と profile 表示が実装されている
       - auth UI が既存 landing のデザインを壊さず統合されている
-    status: pending
+    status: ready
     agent: claude.task
   - task_id: PB-010
     title: "`/dashboard` を session-aware にし未認証時の login prompt と認証済み承認 UI を分岐する"
@@ -165,7 +166,7 @@ tasks:
       - `/dashboard` が session の有無で login prompt か本来の dashboard を出し分ける
       - 未認証ユーザーに `APPROVE` / `REJECT` が見えない
       - 認証済みユーザー名または email が UI で確認できる
-    status: pending
+    status: blocked
     agent: claude.task
   - task_id: PB-011
     title: "OAuth callback と環境変数前提を確認し lint/build まで通す"
@@ -177,5 +178,5 @@ tasks:
       - `AUTH0_REDIRECT_URI` と callback URL の前提が `/auth/callback` に揃っている
       - 手動確認に必要な最小限の情報が repo 内に残っている
       - frontend の lint/build が通る
-    status: pending
-    agent: claude.task
+    status: blocked
+    agent: codex.task

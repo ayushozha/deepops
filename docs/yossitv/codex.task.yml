@@ -9,9 +9,12 @@ execution_notes:
 - PB-001 と PB-002 と PB-003 は並列で着手する。
 - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
 - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
-- PB-008 で Auth0 SDK v4 の導入方針と `/auth/*` ルートを固定してから PB-009 と PB-010 に着手する。
-- PB-009 は公開 landing と auth 導線、PB-010 は dashboard の session-aware UI に集中し、最後に PB-011
-  で callback / env / build を通しで確認する。
+- PB-008 は Codex が先に着手し、Auth0 SDK v4, `frontend/lib/auth0.ts`, `frontend/proxy.ts`,
+  `/auth/*` の前提を固定する。
+- PB-009 は Claude が公開 landing と共通 auth UI を先行実装してよいが、最終的な login/logout 接続は PB-008
+  完了後に合わせる。
+- PB-010 は PB-008 完了後に dashboard の session-aware 分岐へ進める。PB-011 は最後に callback / env
+  / lint/build をまとめて締める。
 context:
   current_state:
   - frontend の `/` と `/dashboard` は実装済みで、固定ダークテーマ、GitHub 導線、ハッカー風の 3 カラム dashboard
@@ -80,4 +83,29 @@ tasks:
     - SSE と定期再取得の併用で incident 表示が破綻しない
     - build / lint が通る
   status: completed
+  agent: codex.task
+- task_id: PB-008
+  title: Auth0 Next.js SDK v4 の基盤を frontend に導入し `/auth/*` ルートを有効化する
+  description: |
+    `docs/yossitv/oauth-requirements.md` と `docs/hackathon-context/auth0-nextjs-quickstart.md` を基準に、frontend に Auth0 v4 の土台を入れる。
+    `frontend/package.json` に `@auth0/nextjs-auth0` を追加し、`frontend/lib/auth0.ts` で `new Auth0Client()` を export する。
+    さらに `frontend/proxy.ts` を追加して quickstart どおりの `/auth/*` ルートを有効化し、dynamic route handler や古い `/api/auth/*` 実装は作らない。
+    `.env.local` / repo root `.env` で必要な環境変数名と `AUTH0_REDIRECT_URI=http://localhost:3000/auth/callback` の前提が崩れないよう、参照箇所や README を必要最小限更新してよい。
+    完了条件:
+    - frontend で Auth0 SDK v4 が参照可能
+    - `/auth/login` と `/auth/logout` の導線を置ける基盤がある
+    - `proxy.ts` 前提の構成で `/auth/*` を使う方針がコード上でも明確
+  status: ready
+  agent: codex.task
+- task_id: PB-011
+  title: OAuth callback と環境変数前提を確認し lint/build まで通す
+  description: |
+    Auth0 の callback / logout / origin 前提を `http://localhost:3000` と `/auth/callback` に合わせ、古い `/api/auth/callback` 前提が残っていないか確認する。
+    必要なら `frontend/README.md` か関連ドキュメントに、ローカルで必要な Auth0 設定値と手動確認手順を短く追記する。
+    最後に `cd frontend && npm run lint` と `cd frontend && npm run build` を実行し、OAuth 導入後も Person B frontend が壊れていないことを確認する。
+    完了条件:
+    - `AUTH0_REDIRECT_URI` と callback URL の前提が `/auth/callback` に揃っている
+    - 手動確認に必要な最小限の情報が repo 内に残っている
+    - frontend の lint/build が通る
+  status: blocked
   agent: codex.task
