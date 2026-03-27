@@ -26,6 +26,8 @@ class Settings:
     environment: str = "hackathon"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
+    maintenance_mode: bool = False
+    public_webhook_url: str | None = None
     demo_app_base_url: str = "http://localhost:8001"
     demo_app_fallback_mode: bool = True
     airbyte_api_url: str = "http://localhost:8000/api/v1"
@@ -88,6 +90,8 @@ def load_settings(
         environment=merged.get("DEEPOPS_ENVIRONMENT", "hackathon"),
         api_host=merged.get("DEEPOPS_API_HOST", "127.0.0.1"),
         api_port=int(merged.get("DEEPOPS_API_PORT", "8000")),
+        maintenance_mode=merged.get("DEEPOPS_MAINTENANCE_MODE", "false").lower() in {"1", "true", "yes", "on"},
+        public_webhook_url=merged.get("DEEPOPS_PUBLIC_WEBHOOK_URL"),
         demo_app_base_url=merged.get("DEEPOPS_DEMO_APP_BASE_URL", merged.get("DEMO_APP_URL", "http://localhost:8001")),
         demo_app_fallback_mode=merged.get("DEEPOPS_DEMO_APP_FALLBACK_MODE", "true").lower() in {"1", "true", "yes", "on"},
         airbyte_api_url=merged.get("AIRBYTE_API_URL", "http://localhost:8000/api/v1"),

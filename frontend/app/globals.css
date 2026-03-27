@@ -108,3 +108,7 @@ a {
     0 0 22px rgba(99, 75, 255, 0.28),
     0 0 56px rgba(168, 85, 247, 0.12);
 }
+
+.kinetic-gradient {
+  background: linear-gradient(135deg, rgba(99, 75, 255, 0.15) 0%, rgba(0, 218, 243, 0.05) 100%);
+}

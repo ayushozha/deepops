@@ -16,6 +16,7 @@ from server.api.escalation import router as escalation_router
 from server.api.ingest import router as ingest_router
 from server.api.incidents import router as incidents_router
 from server.api.stream import router as stream_router
+from server.api.settings import router as settings_router
 from server.api.webhooks import router as webhooks_router
 from server.integrations.aerospike_repo import build_incident_store
 from server.integrations.airbyte_client import AirbyteClient
@@ -193,6 +194,7 @@ def create_app(
     app.include_router(incidents_router)
     app.include_router(ingest_router)
     app.include_router(stream_router)
+    app.include_router(settings_router)
     app.include_router(agent_router)
     app.include_router(approval_router)
     app.include_router(escalation_router)
