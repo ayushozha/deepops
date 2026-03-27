@@ -35,26 +35,53 @@ logger = logging.getLogger(__name__)
 
 
 def _make_llm_call(prompt: str) -> str:
-    """Call the LLM through the shared tracing wrapper."""
-    try:
-        import anthropic
-    except ImportError as e:
-        raise RuntimeError(
-            "The 'anthropic' package is required for default LLM calls. "
-            "Install it with: pip install anthropic"
-        ) from e
+    """Call the LLM through the shared tracing wrapper.
 
-    client = anthropic.Anthropic()
+    Tries Anthropic first (if ANTHROPIC_API_KEY is set), then falls back to
+    OpenAI (if OPENAI_API_KEY is set).
+    """
+    import os
 
-    def _provider_call(**kwargs):
-        response = client.messages.create(**kwargs)
-        return response.content[0].text
+    # Try Anthropic first
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            import anthropic
+            client = anthropic.Anthropic()
 
-    return traced_call_llm(
-        _provider_call,
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
+            def _anthropic_call(**kwargs):
+                response = client.messages.create(**kwargs)
+                return response.content[0].text
+
+            return traced_call_llm(
+                _anthropic_call,
+                model="claude-sonnet-4-20250514",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except Exception:
+            pass  # fall through to OpenAI
+
+    # Fall back to OpenAI
+    if os.environ.get("OPENAI_API_KEY"):
+        try:
+            from openai import OpenAI
+            client = OpenAI()
+
+            def _openai_call(**kwargs):
+                response = client.chat.completions.create(**kwargs)
+                return response.choices[0].message.content or ""
+
+            return traced_call_llm(
+                _openai_call,
+                model="gpt-4o",
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except Exception as e:
+            raise RuntimeError(f"OpenAI LLM call failed: {e}") from e
+
+    raise RuntimeError(
+        "No LLM API key configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY."
     )
 
 

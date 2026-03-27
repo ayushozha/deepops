@@ -797,7 +797,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex-1 p-6 font-mono text-[11px] leading-loose text-white/50 overflow-y-auto space-y-1">
+              <div className="flex-1 p-4 font-mono text-[11px] leading-relaxed text-white/50 overflow-y-auto space-y-0.5">
                 {allTimelineEvents.length === 0 ? (
                   <p className="text-white/30 text-center py-8">
                     No timeline events yet. Trigger a bug to see activity.
@@ -808,11 +808,20 @@ export default function DashboardPage() {
                       (s) => s.name.toLowerCase() === (evt.sponsor ?? evt.actor ?? "").toLowerCase(),
                     );
                     const color = sponsorInfo?.color ?? "#A9ABB3";
+                    const statusColor =
+                      evt.status === "resolved" ? "#10B981"
+                        : evt.status === "failed" ? "#FF4B66"
+                          : evt.status === "awaiting_approval" ? "#6366F1"
+                            : undefined;
                     return (
-                      <div key={`${evt.at_ms}-${i}`}>
-                        <span style={{ color }}>[{formatTime(evt.at_ms)}]</span>{" "}
-                        <span className="text-white">{evt.actor ?? evt.sponsor ?? "System"}:</span>{" "}
-                        {evt.message}
+                      <div
+                        key={`${evt.at_ms}-${i}`}
+                        className="flex items-start gap-2 py-1.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] px-2 rounded transition-colors"
+                      >
+                        <span className="shrink-0 w-1.5 h-1.5 rounded-full mt-1.5" style={{ background: color }} />
+                        <span className="shrink-0 text-white/30 w-[70px]">{formatTime(evt.at_ms)}</span>
+                        <span className="shrink-0 font-bold w-[130px] truncate" style={{ color }}>{evt.actor ?? evt.sponsor ?? "System"}</span>
+                        <span style={{ color: statusColor }} className="flex-1">{evt.message}</span>
                       </div>
                     );
                   })
@@ -822,68 +831,52 @@ export default function DashboardPage() {
 
             {/* ---- Overmind Traces --------------------------------- */}
             <div className="bg-[#0A0A0B] rounded-2xl p-6 border border-white/[0.08]">
-              <h4 className="text-xs font-display uppercase tracking-widest text-white/50 mb-4">
+              <h4 className="text-xs font-display uppercase tracking-widest text-white/50 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
                 Overmind Traces
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {incidents.length === 0 ? (
                   <p className="text-[11px] font-mono text-white/30">No traces yet.</p>
                 ) : (
                   incidents.map((incident, i) => {
-                    const obs = incident.observability as
-                      | Record<string, unknown>
-                      | undefined;
-                    const llmLatency = obs?.llm_latency_ms as number | undefined;
-                    const tokens = obs?.total_tokens as number | undefined;
-                    const cost = obs?.estimated_cost as number | undefined;
+                    const obs = incident.observability as Record<string, unknown> | undefined;
+                    const traceId = obs?.overmind_trace_id as string | undefined;
+                    const timelineLen = incident.timeline?.length ?? 0;
+                    const durationMs = incident.resolution_time_ms
+                      ?? (incident.updated_at_ms - incident.created_at_ms);
+                    const durationSec = Math.round(durationMs / 1000);
+                    const sevColor = SEVERITY_COLORS[incident.severity] ?? "#A9ABB3";
+                    const statusIcon =
+                      incident.status === "resolved" ? "check_circle"
+                        : incident.status === "failed" ? "error"
+                          : incident.status === "awaiting_approval" ? "hourglass_top"
+                            : "sync";
+                    const statusColor =
+                      incident.status === "resolved" ? "#10B981"
+                        : incident.status === "failed" ? "#FF4B66"
+                          : incident.status === "awaiting_approval" ? "#6366F1"
+                            : "#FDE68A";
                     const isLast = i === incidents.length - 1;
 
                     return (
                       <div
                         key={incident.incident_id}
-                        className={`flex justify-between items-center text-[11px] font-mono pb-2 ${
-                          !isLast ? "border-b border-white/[0.08]" : ""
+                        className={`flex items-center gap-3 text-[11px] font-mono py-2 ${
+                          !isLast ? "border-b border-white/[0.06]" : ""
                         }`}
                       >
-                        <span style={{ color: "#A855F7" }} className="font-bold">
+                        <span className="material-symbols-outlined text-sm" style={{ color: statusColor }}>{statusIcon}</span>
+                        <span style={{ color: "#A855F7" }} className="font-bold shrink-0">
                           {shortId(incident.incident_id)}
                         </span>
-                        <div className="flex gap-4 text-white/50">
-                          {llmLatency != null ? (
-                            <>
-                              <span>
-                                LLM:{" "}
-                                <span className="text-[#FDE68A]">{llmLatency}ms</span>
-                              </span>
-                              {tokens != null && (
-                                <span>
-                                  Tokens:{" "}
-                                  <span style={{ color: "#A855F7" }}>
-                                    {tokens.toLocaleString()}
-                                  </span>
-                                </span>
-                              )}
-                              {cost != null && (
-                                <span>
-                                  Cost:{" "}
-                                  <span className="text-[#10B981]">
-                                    ${cost.toFixed(3)}
-                                  </span>
-                                </span>
-                              )}
-                            </>
-                          ) : incident.status === "resolved" ? (
-                            <span className="text-white/30">completed</span>
-                          ) : (
-                            <span className="italic text-white/30">
-                              {incident.status === "diagnosing"
-                                ? "diagnosing..."
-                                : incident.status === "fixing"
-                                  ? "fixing..."
-                                  : `${incident.status}...`}
-                            </span>
-                          )}
-                        </div>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ color: sevColor, backgroundColor: `${sevColor}15` }}>
+                          {incident.severity}
+                        </span>
+                        <div className="flex-1" />
+                        <span className="text-white/30">{timelineLen} events</span>
+                        <span className="text-white/50">{durationSec > 0 ? `${durationSec}s` : "<1s"}</span>
+                        <span className="text-white/20">{incident.status}</span>
                       </div>
                     );
                   })
