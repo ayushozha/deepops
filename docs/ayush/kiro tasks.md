@@ -6,6 +6,17 @@ Own the parts of Person A that turn a structured diagnosis into a believable, sp
 
 This file is only for **Person A** scope.
 
+## Overclaw Requirement
+
+Kiro's work should now be wired so Overclaw can observe, evaluate, and eventually optimize the fix-generation path.
+
+The official Overclaw guide matters here in four ways:
+
+1. Tool calls should be wrapped with `call_tool` so Overclaw gets detailed spans.
+2. Candidate generation is multi-file aware, so `agent/fixer.py`, `agent/kiro_client.py`, and `agent/fix_specs.py` should remain cleanly imported from the registered entrypoint.
+3. Validation and smoke testing are part of Overclaw's optimization loop, so fix generation must have a stable interface and lightweight local checks.
+4. Accepted optimized variants and reports will land in `.overclaw/agents/deepops-person-a/experiments/`, so Kiro should expect to compare its current implementation against Overclaw artifacts.
+
 ## Files Kiro Should Own
 
 - `agent/fixer.py`
@@ -33,6 +44,8 @@ By the end of today, Kiro should make it possible for Person A to take a structu
 3. likely files changed,
 4. a short test plan,
 5. a clean `fix` payload that Codex can write back into the incident record.
+
+By the end of today, Kiro should also make the fix path evaluable by Overclaw rather than only visually demoable.
 
 ## Shared Contracts Kiro Must Respect
 
@@ -70,6 +83,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - structured enough to showcase Kiro
   - short enough to generate quickly during the demo
   - specific to the diagnosis instead of generic boilerplate
+- Spec fields that are stable enough for Overclaw evals and regression checks.
 
 **Done when**
 
@@ -88,6 +102,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - invokes Kiro with repo path and timeout
   - captures stdout and stderr
   - returns exit status and raw output
+- A wrapper shape that Codex can place behind `call_tool` in the Overclaw path.
 - Clear handling for:
   - CLI not installed
   - timeout
@@ -115,11 +130,16 @@ By the end of today, Kiro should make it possible for Person A to take a structu
 - A flow that:
   - receives diagnosis from Claude
   - generates the Kiro spec
-  - runs the Kiro CLI
+  - runs the Kiro CLI through a traceable tool boundary
   - extracts a diff preview
   - extracts or infers files changed
   - produces a small test plan
 - Output formatting that is dashboard-friendly and not too long.
+
+**Important**
+
+- The Overclaw-evaluated path should return a stable dict output for scoring.
+- Avoid hidden side effects that would make batched eval runs flaky.
 
 **Done when**
 
@@ -140,6 +160,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - test plan
 - Clear labeling that fallback mode was used.
 - A simple rule that prefers real Kiro output whenever available.
+- A stable fallback output shape so Overclaw evals do not fail just because the CLI is unavailable.
 
 **Important**
 
@@ -163,6 +184,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - keep only relevant hunks
   - extract changed file paths
   - produce a readable preview without flooding the incident record
+- Prefer deterministic summarization over highly variable phrasing so Overclaw can compare runs more cleanly.
 
 **Done when**
 
@@ -183,6 +205,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - missing-user null handling
   - blocking timeout search
 - Expected spec shapes and expected file change lists for each.
+- Expected-output examples that can feed or inform Overclaw's dataset and eval spec.
 
 **Done when**
 
@@ -203,6 +226,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - diff preview trimming
   - files changed extraction
   - final `fix` payload completeness
+  - stable interface behavior for Overclaw eval runs
 
 **Done when**
 
@@ -220,6 +244,7 @@ By the end of today, Kiro should make it possible for Person A to take a structu
   - one-line fix summary
   - one-line regression warning if relevant
   - compact test plan steps that Ayush can say out loud during the demo
+- Keep the summaries tight enough that they can also be scored or compared in Overclaw outputs if needed.
 
 **Done when**
 
@@ -233,6 +258,7 @@ Kiro should hand Codex these exact stable artifacts:
 - Kiro success versus fallback mode indicator
 - error contract for Kiro timeout or CLI failure
 - example fix payload for each of the three demo bugs
+- any assumptions needed for Overclaw eval scoring of fix quality
 
 Codex should not need to guess how to consume Kiro output.
 
@@ -265,6 +291,11 @@ If that payload changes shape, Kiro work will slow down immediately, so this con
 ### Checkpoint 4
 
 - Codex can write Kiro's `fix` payload into the incident and move the incident to `gating`.
+
+### Checkpoint 5
+
+- The Kiro path can be invoked as a traceable tool call inside the Overclaw-registered agent entrypoint.
+- The team knows where to inspect `.overclaw/agents/deepops-person-a/experiments/report.md` and `best_agent.py`.
 
 ## What Kiro Should Not Spend Time On Today
 

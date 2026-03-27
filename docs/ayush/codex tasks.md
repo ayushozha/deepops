@@ -6,6 +6,29 @@ Own the parts of Person A that define how the agent runs, how it consumes incide
 
 This file is only for **Person A** scope.
 
+## Overclaw Requirement
+
+Overclaw is not just observability for this hackathon. It is the optimizer we should wire into Person A from the start.
+
+Codex needs to make Person A compatible with the Overclaw flow described in the official guide:
+
+1. Install and initialize Overclaw with `uv tool install overclaw` and `overclaw init`.
+2. Expose a Python entrypoint that Overclaw can register.
+3. Make sure the entrypoint accepts an input `dict` and returns an output `dict`.
+4. Use `call_llm` and `call_tool` wrappers so Overclaw gets full tracing detail, not only coarse input and output capture.
+5. Keep the agent split across imported local modules so Overclaw can optimize a multi-file bundle instead of one monolithic file.
+6. Make it easy to run:
+   - `overclaw agent register deepops-person-a agents.person_a_agent:run`
+   - `overclaw setup deepops-person-a --policy docs/ayush/person-a-policy.md`
+   - `overclaw optimize deepops-person-a`
+7. Expect artifacts under `.overclaw/agents/deepops-person-a/`, especially:
+   - `setup_spec/policies.md`
+   - `setup_spec/eval_spec.json`
+   - `setup_spec/dataset.json`
+   - `experiments/best_agent.py`
+   - `experiments/report.md`
+   - `experiments/traces/`
+
 ## Files Codex Should Own
 
 - `config.py`
@@ -16,6 +39,7 @@ This file is only for **Person A** scope.
 - `agent/types.py` or `agent/contracts.py`
 - `agent/store_adapter.py` or equivalent Person A read/patch wrapper
 - `agent/runner.py` or equivalent local entrypoint
+- `agents/person_a_agent.py` or equivalent Overclaw-registered entrypoint
 - `tests/test_orchestrator.py`
 - `tests/test_severity.py`
 - `tests/test_detector.py`
@@ -31,6 +55,8 @@ By the end of today, Codex should make it possible to start one agent process th
 3. Moves incidents through `diagnosing`, `fixing`, and `gating`.
 4. Calls into Claude-owned diagnosis functions and Kiro-owned fix functions through clean interfaces.
 5. Writes back severity, status, and timeline events in the exact shape expected by the dashboard and Person B.
+
+By the end of today, Codex should also make it possible to run one Overclaw optimization loop against a Person A entrypoint without redesigning the codebase first.
 
 ## Shared Contracts Codex Must Respect
 
@@ -50,6 +76,31 @@ By the end of today, Codex should make it possible to start one agent process th
 
 ## P0 Tasks
 
+### 0. Bootstrap Overclaw around the Person A codebase
+
+**Deliverable**
+
+- A project layout and entrypoint that matches the official Overclaw quick start.
+
+**What to build**
+
+- Install and initialize Overclaw locally.
+- Create an Overclaw-facing agent entrypoint such as `agents/person_a_agent.py:run`.
+- Make the entrypoint:
+  - accept one `input` dict
+  - execute the Person A logic for a single incident-shaped case
+  - return one structured output dict
+- Ensure the entrypoint imports local modules instead of inlining everything so Overclaw can use its multi-file optimization flow.
+
+**Important**
+
+- This entrypoint is for evaluation and optimization, not for replacing the live Aerospike loop.
+- It should be a thin adapter over the real runtime logic, not a second implementation.
+
+**Done when**
+
+- `overclaw agent register deepops-person-a agents.person_a_agent:run` is a plausible one-line command for this repo.
+
 ### 1. Create the Person A runtime scaffold
 
 **Deliverable**
@@ -60,11 +111,16 @@ By the end of today, Codex should make it possible to start one agent process th
 **What to build**
 
 - `agent/` package with clear module boundaries.
+- `agents/` package or equivalent Overclaw registration package for optimizer-facing entrypoints.
 - `config.py` that loads:
   - Aerospike host and namespace config
   - Overmind API key
   - Anthropic or LLM configuration placeholders
   - Macroscope and Kiro config placeholders, even if Claude fills usage later
+- A small block of Overclaw-specific config notes covering:
+  - registered agent name
+  - policy path
+  - dataset path
 - A small runtime settings object or dataclass so the rest of the code does not read environment variables directly.
 
 **Done when**
@@ -148,6 +204,8 @@ By the end of today, Codex should make it possible to start one agent process th
 - A narrow interface layer for Claude-owned calls, for example:
   - `run_diagnosis(incident) -> DiagnosisResult`
   - `run_fix_generation(incident, diagnosis) -> FixResult`
+- A thin single-case adapter that the Overclaw entrypoint can call without Aerospike polling, for example:
+  - `run_case(input_case: dict) -> dict`
 - Safe error handling:
   - if diagnosis fails, mark incident `failed`
   - if fix generation fails, mark incident `failed`
@@ -157,6 +215,7 @@ By the end of today, Codex should make it possible to start one agent process th
 
 - The orchestrator should not decide deployment behavior directly.
 - Its final job is to hand off a fully populated incident to Person B by leaving it in `gating`.
+- The Overclaw-facing single-case path should avoid live deployment and store mutation side effects during evaluation runs.
 
 **Done when**
 
@@ -199,6 +258,9 @@ By the end of today, Codex should make it possible to start one agent process th
   - diagnosis call
   - fix generation call
   - store patch/write operations
+- Overclaw tracer wrappers in the optimization path:
+  - `call_llm` around diagnosis model calls
+  - `call_tool` around Macroscope and Kiro wrappers
 - Attributes on spans such as:
   - `incident_id`
   - `error_type`
@@ -210,8 +272,31 @@ By the end of today, Codex should make it possible to start one agent process th
 **Done when**
 
 - Overmind can show one full trace for a single incident lifecycle through Person A.
+- Overclaw has enough span detail to diagnose bad tool use instead of only final outputs.
 
-### 7. Build a local runner and dry-run mode
+### 7. Make the runtime evaluation-friendly for Overclaw
+
+**Deliverable**
+
+- One clean separation between live runtime behavior and optimization behavior.
+
+**What to build**
+
+- An input adapter that converts an Overclaw dataset case into the incident-shaped object Person A expects.
+- An output adapter that returns a stable dict for scoring, for example:
+  - diagnosis fields
+  - fix fields
+  - severity
+- A no-side-effects mode for evaluation runs so Overclaw can run batches safely.
+
+**Done when**
+
+- The same core logic can be used by:
+  - the live agent loop
+  - the Overclaw entrypoint
+  without branching into two unrelated code paths.
+
+### 8. Build a local runner and dry-run mode
 
 **Deliverable**
 
@@ -223,13 +308,16 @@ By the end of today, Codex should make it possible to start one agent process th
   - `--once` to process a single incident and exit
   - `--mock-incident docs/incident-example.json`
   - `--dry-run` to skip real external writes
+- Notes or helper commands for:
+  - `overclaw agent list`
+  - `overclaw agent show deepops-person-a`
 - Console logging that is demo-readable but not noisy.
 
 **Done when**
 
 - Ayush can test one incident locally without requiring the full live pipeline.
 
-### 8. Add tests around lifecycle behavior
+### 9. Add tests around lifecycle behavior
 
 **Deliverable**
 
@@ -258,6 +346,8 @@ Codex should hand Claude and Kiro these exact interfaces as early as possible:
 - fix generation function signature
 - example incident fixture
 - expected patch shape for diagnosis and fix payloads
+- Overclaw entrypoint signature
+- Overclaw input and output case shape used for evaluation
 
 Claude and Kiro should be able to implement internals without changing orchestrator semantics.
 
@@ -268,6 +358,7 @@ Claude and Kiro should be able to implement internals without changing orchestra
 - Config loads.
 - Runner starts.
 - Mock incident loads.
+- Overclaw is initialized and the entrypoint can be registered.
 
 ### Checkpoint 2
 
@@ -284,6 +375,11 @@ Claude and Kiro should be able to implement internals without changing orchestra
 - Kiro fix result plugs in cleanly.
 - Severity is computed.
 - Incident ends in `gating`.
+
+### Checkpoint 5
+
+- `overclaw setup deepops-person-a --policy docs/ayush/person-a-policy.md` is unblocked.
+- The `.overclaw/agents/deepops-person-a/` artifact layout is understood by the team.
 
 ## What Codex Should Not Spend Time On Today
 
