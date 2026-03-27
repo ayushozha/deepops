@@ -6,33 +6,21 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
 ENV NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-RUN npm run build
+RUN npm run build && ls -la .next/standalone/
 
-# Stage 2: Python + Node + Aerospike runtime
+# Stage 2: Python + Node runtime (in-memory Aerospike fallback)
 FROM python:3.12-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      curl supervisor nodejs gnupg2 && \
+      curl supervisor nodejs && \
     rm -rf /var/lib/apt/lists/*
-
-# Install Aerospike Community Edition
-RUN curl -fsSL https://artifacts.aerospike.com/aerospike-server-community/7.2.0.2/aerospike-server-community_7.2.0.2_tools-13.0.0_debian12_x86_64.tgz \
-      -o /tmp/aerospike.tgz && \
-    tar xzf /tmp/aerospike.tgz -C /tmp && \
-    dpkg -i /tmp/aerospike-server-community_7.2.0.2_tools-13.0.0_debian12_x86_64/aerospike-server-community_*.deb || true && \
-    apt-get -f install -y && \
-    rm -rf /tmp/aerospike* && \
-    mkdir -p /opt/aerospike/data
 
 WORKDIR /app
 
 # Install Python dependencies
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy Aerospike config
-COPY infra/aerospike/aerospike.conf /etc/aerospike/aerospike.conf
 
 # Copy backend code
 COPY config.py ./
@@ -44,14 +32,14 @@ COPY docs/ ./docs/
 COPY .overclaw/ ./.overclaw/
 
 # Copy built frontend (standalone output)
-COPY --from=frontend-build /app/frontend/.next/standalone/frontend ./frontend
+COPY --from=frontend-build /app/frontend/.next/standalone ./frontend
 COPY --from=frontend-build /app/frontend/.next/static ./frontend/.next/static
 COPY --from=frontend-build /app/frontend/public ./frontend/public
 
 # Copy supervisord config
 COPY supervisord.conf /etc/supervisor/conf.d/deepops.conf
 
-# Frontend on 4000 (avoids Aerospike port 3000 conflict)
+# Frontend on 4000 (avoids potential port conflicts)
 EXPOSE 4000
 
 # Health check against the backend
@@ -60,5 +48,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
 
 ENV DEEPOPS_API_HOST=0.0.0.0
 ENV DEEPOPS_API_PORT=8000
+ENV DEEPOPS_ALLOW_IN_MEMORY_STORE=true
 
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/deepops.conf"]
