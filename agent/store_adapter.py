@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from typing import Any, Protocol
 
@@ -58,6 +59,22 @@ class InMemoryIncidentStore:
 
 
 class AerospikeIncidentStore:
+    """Stores incidents in Aerospike using a single JSON payload bin.
+
+    Aerospike has a 15-character bin name limit. The canonical incident schema
+    has field names exceeding that (e.g. resolution_time_ms, affected_components).
+    To work around this, we store the full incident as a JSON string in a single
+    ``payload`` bin and keep a few short index bins for fast scan filtering.
+    """
+
+    # Short index bins (all <=6 chars) used for scan-time filtering
+    _BIN_PAYLOAD = "payload"
+    _BIN_ID = "iid"
+    _BIN_STATUS = "st"
+    _BIN_SEVERITY = "sev"
+    _BIN_CREATED = "crt_ms"
+    _BIN_UPDATED = "upd_ms"
+
     def __init__(self, settings: Settings) -> None:
         try:
             import aerospike  # type: ignore
@@ -72,9 +89,26 @@ class AerospikeIncidentStore:
     def _key(self, incident_id: str) -> tuple[str, str, str]:
         return (self._namespace, self._set_name, incident_id)
 
+    def _to_bins(self, incident: IncidentRecord) -> dict[str, Any]:
+        return {
+            self._BIN_PAYLOAD: json.dumps(incident),
+            self._BIN_ID: incident.get("incident_id", ""),
+            self._BIN_STATUS: incident.get("status", ""),
+            self._BIN_SEVERITY: incident.get("severity", ""),
+            self._BIN_CREATED: incident.get("created_at_ms", 0),
+            self._BIN_UPDATED: incident.get("updated_at_ms", 0),
+        }
+
+    @staticmethod
+    def _from_bins(bins: dict[str, Any]) -> IncidentRecord:
+        raw = bins.get("payload")
+        if raw is None:
+            return normalize_incident(bins)
+        return normalize_incident(json.loads(raw))
+
     def create_incident(self, incident: IncidentRecord) -> IncidentRecord:
         normalized = normalize_incident(incident)
-        self._client.put(self._key(normalized["incident_id"]), normalized)
+        self._client.put(self._key(normalized["incident_id"]), self._to_bins(normalized))
         return normalized
 
     def get_incident(self, incident_id: str) -> IncidentRecord | None:
@@ -82,7 +116,7 @@ class AerospikeIncidentStore:
             _, _, bins = self._client.get(self._key(incident_id))
         except self._aerospike.exception.RecordNotFound:
             return None
-        return normalize_incident(bins)
+        return self._from_bins(bins)
 
     def list_incidents(self, *, status: str | None = None, limit: int = 50) -> list[IncidentRecord]:
         incidents: list[IncidentRecord] = []
@@ -90,9 +124,10 @@ class AerospikeIncidentStore:
         def _collector(record: tuple[object, object, dict[str, Any]]) -> None:
             if len(incidents) >= limit:
                 return
-            normalized = normalize_incident(record[2])
-            if status is None or normalized.get("status") == status:
-                incidents.append(normalized)
+            bins = record[2]
+            if status is not None and bins.get("st") != status:
+                return
+            incidents.append(self._from_bins(bins))
 
         scan = self._client.scan(self._namespace, self._set_name)
         scan.foreach(_collector)
@@ -104,7 +139,7 @@ class AerospikeIncidentStore:
         if existing is None:
             raise KeyError(f"Incident not found: {incident_id}")
         merged = normalize_incident(deep_merge_dict(existing, patch))
-        self._client.put(self._key(incident_id), merged)
+        self._client.put(self._key(incident_id), self._to_bins(merged))
         return merged
 
     def append_timeline_event(self, incident_id: str, event: TimelineEvent) -> IncidentRecord:
