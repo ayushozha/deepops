@@ -1,0 +1,118 @@
+version: 1
+scope: person-b
+owner: yossitv
+requirements:
+  - frontend-requirements.md
+  - person-b-policy.md
+execution_notes:
+  - PB-001 と PB-002 と PB-003 は並列で着手する。
+  - PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
+  - PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
+context:
+  current_state:
+    - frontend は Create Next App の初期雛形が残っており、実質的な UI 実装は frontend/app/page.tsx, frontend/app/layout.tsx, frontend/app/globals.css のみ。
+    - frontend/app/dashboard/ 配下、dashboard 用 components、dashboard 用 hooks は未作成。
+    - frontend/next.config.ts に API proxy rewrites がなく、server/app.py にも CORS middleware が見当たらないため、ローカル接続には frontend 側の proxy 設定が必要。
+    - backend 側は /api/health, /api/incidents, /api/incidents/{id}, /api/incidents/stream, /api/approval/{incident_id}/decision を実装済みで、SSE の custom event 名も要件と整合している。
+    - GET /api/incidents は bare array を返し、POST /api/approval/{id}/decision は incident を含むラップ済みオブジェクトを返す。
+    - 2026-03-28 時点で `cd frontend && npm run build` と `cd frontend && npm run lint` は成功している。
+  agent_guidance:
+    codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
+    claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
+tasks:
+  - task_id: PB-001
+    title: "Dashboard のデータ契約と API 接続基盤を固める"
+    description: |
+      Person B 実装の土台として frontend 側の契約を固定する。
+      `frontend/app/dashboard/types.ts` を作り、Incident、SSE payload、approval response の型を `frontend-requirements.md` と現状の backend 実装に合わせて定義する。
+      `frontend/app/dashboard/hooks/useIncidents.ts` で以下を実装する:
+      - `GET /api/incidents` の初期取得
+      - `EventSource` による `incident.created` / `incident.updated` 購読
+      - `pipeline.heartbeat` の無視
+      - 5-10 秒間隔の再取得
+      - window focus 復帰時の再取得
+      - `updated_at_ms desc` 優先の並び替え
+      - incident merge と selected incident の整合維持
+      `frontend/app/dashboard/hooks/useApproval.ts` で `/api/approval/{id}/decision` を叩き、`response.incident` を state に戻せるようにする。
+      あわせて `frontend/next.config.ts` に `/api/:path*` の proxy rewrites を追加し、`NEXT_PUBLIC_API_BASE_URL` を前提に FastAPI へ疎通できるようにする。
+      完了条件:
+      - UI 側が ad-hoc 変換なしで backend payload を扱える
+      - hooks 単体で incident 一覧更新と approval 反映の責務が閉じている
+    status: ready
+    agent: codex.task
+  - task_id: PB-002
+    title: "`/` のランディングページを DeepOps の pitch ページへ置き換える"
+    description: |
+      `frontend/app/page.tsx` を create-next-app の初期画面から置き換える。
+      DeepOps のプロジェクト名、GitHub リポジトリリンク、キャッチコピー、アーキテクチャ概要、スポンサーツール一覧、`/dashboard` への CTA を配置する。
+      `frontend/app/layout.tsx` の metadata も DeepOps 向けに更新する。
+      このタスクは backend 依存がないので単独で先行実装してよい。
+      完了条件:
+      - `/` が pitch ページとして成立している
+      - `/dashboard` への導線が視認できる
+    status: ready
+    agent: claude.task
+  - task_id: PB-003
+    title: "`/dashboard` の固定ダークテーマと 3 カラム shell を作る"
+    description: |
+      `frontend/app/globals.css` を固定ダークテーマに置き換え、`prefers-color-scheme` 依存をなくす。
+      `frontend/app/dashboard/page.tsx` を作成し、ヘッダー、左カラム、右上 diff 領域、右下 approval 領域を持つ 3 カラム shell を作る。
+      `frontend/app/dashboard/components/SeverityBadge.tsx` と `frontend/app/dashboard/components/StatusBadge.tsx` を作り、要件の色定義を反映する。
+      ヘッダー中央の接続状況バッジは prop で受けられるようにし、PB-007 で health polling を接続しやすい形にしておく。
+      完了条件:
+      - `/dashboard` のレイアウトが要件どおりのパネル構成になっている
+      - 色、罫線、フォントがハッカー風テーマに揃っている
+    status: ready
+    agent: claude.task
+  - task_id: PB-004
+    title: "左パネルの IncidentLog を prop 駆動コンポーネントとして実装する"
+    description: |
+      `frontend/app/dashboard/components/IncidentList.tsx` を作り、incident 一覧、selected id、onSelect を受け取る純粋な UI コンポーネントとして実装する。
+      表示項目は severity、短縮 incident id、status、service + environment、error_type + error_message、相対時刻。
+      一覧はスクロール可能にし、選択中の incident が明確にわかる視覚表現にする。
+      PB-001 の hook 接続前でもモック props で確認できる構造にする。
+      完了条件:
+      - Incident 一覧の見た目と情報密度が要件を満たす
+      - page 層からデータと選択状態を渡すだけで使える
+    status: ready
+    agent: claude.task
+  - task_id: PB-005
+    title: "右上の DiffViewer と incident 詳細パネルを実装する"
+    description: |
+      `frontend/app/dashboard/components/DiffViewer.tsx` を作り、選択中 incident を受けて以下を表示する:
+      - `fix.files_changed`
+      - unified diff 形式の `fix.diff_preview`
+      - `fix.spec_markdown` のアコーディオン
+      - `diagnosis.root_cause`
+      - `diagnosis.confidence`
+      - 任意で `diagnosis.suggested_fix`, `fix.test_plan`, `approval.channel`
+      diff は追加、削除、文脈行で色分けし、incident 未選択時はプレースホルダーを出す。
+      完了条件:
+      - incident 選択時に detail パネルとして十分な情報が見える
+      - incident 未選択時の空状態が崩れない
+    status: ready
+    agent: claude.task
+  - task_id: PB-006
+    title: "右下の ApprovalButtons を実装し、承認 UI の条件分岐を固定する"
+    description: |
+      `frontend/app/dashboard/components/ApprovalButtons.tsx` を作り、選択中 incident と approve / reject handler を受ける UI コンポーネントとして実装する。
+      表示条件は `incident.status === "awaiting_approval"` かつ `incident.approval.status === "pending"` に限定する。
+      送信中の disabled 制御、二重送信防止、成功時に `response.incident` を上位 state に戻しやすい props 設計にする。
+      PB-001 の `useApproval` に素直に接続できる shape を優先し、UI 側で approval payload を組み立て直さない。
+      完了条件:
+      - approval が不要な incident でボタンが出ない
+      - pending incident だけ approve / reject が押せる
+    status: ready
+    agent: claude.task
+  - task_id: PB-007
+    title: "Dashboard を backend と通しで接続し、ヘルス監視と整合性確認を締める"
+    description: |
+      PB-001 から PB-006 を統合し、`frontend/app/dashboard/page.tsx` で実データ接続を完了させる。
+      `GET /api/health` を使った LIVE / DEGRADED / OFFLINE バッジ更新、selected incident の detail 再整合、approval 実行後の再取得、SSE 切断後の補完再取得をまとめて仕上げる。
+      仕上げとして build / lint を再実行し、必要なら手動確認手順を docs に短く残す。
+      完了条件:
+      - `/dashboard` が FastAPI backend に接続して動く
+      - SSE と定期再取得の併用で incident 表示が破綻しない
+      - build / lint が通る
+    status: blocked
+    agent: codex.task

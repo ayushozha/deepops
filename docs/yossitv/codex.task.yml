@@ -1,0 +1,61 @@
+version: 1
+scope: person-b
+owner: yossitv
+requirements:
+- frontend-requirements.md
+- person-b-policy.md
+execution_notes:
+- PB-001 と PB-002 と PB-003 は並列で着手する。
+- PB-004 と PB-005 と PB-006 は PB-001 の型と hooks 契約を前提に進めるが、prop 駆動で先に UI を作ってよい。
+- PB-007 は dashboard が通しで動く状態を作る締めの統合タスクにする。
+context:
+  current_state:
+  - frontend は Create Next App の初期雛形が残っており、実質的な UI 実装は frontend/app/page.tsx, frontend/app/layout.tsx,
+    frontend/app/globals.css のみ。
+  - frontend/app/dashboard/ 配下、dashboard 用 components、dashboard 用 hooks は未作成。
+  - frontend/next.config.ts に API proxy rewrites がなく、server/app.py にも CORS middleware
+    が見当たらないため、ローカル接続には frontend 側の proxy 設定が必要。
+  - backend 側は /api/health, /api/incidents, /api/incidents/{id}, /api/incidents/stream,
+    /api/approval/{incident_id}/decision を実装済みで、SSE の custom event 名も要件と整合している。
+  - GET /api/incidents は bare array を返し、POST /api/approval/{id}/decision は incident
+    を含むラップ済みオブジェクトを返す。
+  - 2026-03-28 時点で `cd frontend && npm run build` と `cd frontend && npm run lint`
+    は成功している。
+  agent_guidance:
+    codex.task: 推論を長く使い、契約整理、hooks / state 同期、proxy、統合、検証を担当する。
+    claude.task: UI 実装、コンポーネント分割、見た目の作り込みを高速に進める。
+generated_from: task.yml
+agent: codex.task
+tasks:
+- task_id: PB-001
+  title: Dashboard のデータ契約と API 接続基盤を固める
+  description: |
+    Person B 実装の土台として frontend 側の契約を固定する。
+    `frontend/app/dashboard/types.ts` を作り、Incident、SSE payload、approval response の型を `frontend-requirements.md` と現状の backend 実装に合わせて定義する。
+    `frontend/app/dashboard/hooks/useIncidents.ts` で以下を実装する:
+    - `GET /api/incidents` の初期取得
+    - `EventSource` による `incident.created` / `incident.updated` 購読
+    - `pipeline.heartbeat` の無視
+    - 5-10 秒間隔の再取得
+    - window focus 復帰時の再取得
+    - `updated_at_ms desc` 優先の並び替え
+    - incident merge と selected incident の整合維持
+    `frontend/app/dashboard/hooks/useApproval.ts` で `/api/approval/{id}/decision` を叩き、`response.incident` を state に戻せるようにする。
+    あわせて `frontend/next.config.ts` に `/api/:path*` の proxy rewrites を追加し、`NEXT_PUBLIC_API_BASE_URL` を前提に FastAPI へ疎通できるようにする。
+    完了条件:
+    - UI 側が ad-hoc 変換なしで backend payload を扱える
+    - hooks 単体で incident 一覧更新と approval 反映の責務が閉じている
+  status: ready
+  agent: codex.task
+- task_id: PB-007
+  title: Dashboard を backend と通しで接続し、ヘルス監視と整合性確認を締める
+  description: |
+    PB-001 から PB-006 を統合し、`frontend/app/dashboard/page.tsx` で実データ接続を完了させる。
+    `GET /api/health` を使った LIVE / DEGRADED / OFFLINE バッジ更新、selected incident の detail 再整合、approval 実行後の再取得、SSE 切断後の補完再取得をまとめて仕上げる。
+    仕上げとして build / lint を再実行し、必要なら手動確認手順を docs に短く残す。
+    完了条件:
+    - `/dashboard` が FastAPI backend に接続して動く
+    - SSE と定期再取得の併用で incident 表示が破綻しない
+    - build / lint が通る
+  status: blocked
+  agent: codex.task
