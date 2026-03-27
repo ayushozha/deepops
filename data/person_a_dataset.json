@@ -1,0 +1,282 @@
+[
+  {
+    "input": {
+      "incident_id": "INC-001",
+      "source": {
+        "path": "/calculate/0",
+        "error_type": "ZeroDivisionError",
+        "error_message": "division by zero",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /calculate/0 raised ZeroDivisionError at line 15 in app.py. The route divides a fixed numerator by the URL parameter, which is 0."
+    },
+    "expected_output": {
+      "root_cause": "The /calculate/<value> route uses the URL parameter as a divisor without checking for zero, causing ZeroDivisionError when value is 0.",
+      "suggested_fix": "Add a guard clause before the division that returns a 400 response when the divisor is zero.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.88,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "non-critical", "no data loss"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-002",
+      "source": {
+        "path": "/calculate/-1",
+        "error_type": "ZeroDivisionError",
+        "error_message": "division by zero",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /calculate/-1 triggered a computation where an intermediate floor-division step produced a zero divisor. Negative boundary input caused the denominator to evaluate to 0."
+    },
+    "expected_output": {
+      "root_cause": "Negative input to /calculate route causes an intermediate computation to produce a zero denominator, triggering ZeroDivisionError.",
+      "suggested_fix": "Validate that the computed denominator is non-zero before performing division, and return a 400 error for inputs that would produce a zero denominator.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.80,
+      "confidence_max": 0.95,
+      "severity_reasoning_contains": ["medium", "edge case", "no data loss"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-003",
+      "source": {
+        "path": "/calculate/abc",
+        "error_type": "ValueError",
+        "error_message": "invalid literal for int() with base 10: 'abc'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /calculate/abc failed because the route attempts to convert the URL parameter to int without validation. Raises ValueError before reaching the division logic."
+    },
+    "expected_output": {
+      "root_cause": "The /calculate route passes the URL parameter directly to int() without validating that the input is a numeric string, raising ValueError for non-numeric input.",
+      "suggested_fix": "Add input validation or a try/except around the int() conversion that returns a 400 response with a descriptive error message for non-numeric input.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "input validation", "no data loss"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-004",
+      "source": {
+        "path": "/user/unknown",
+        "error_type": "KeyError",
+        "error_message": "'unknown'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /user/unknown raised KeyError because the users dictionary does not contain the key 'unknown'. The route accesses users[username] without checking membership."
+    },
+    "expected_output": {
+      "root_cause": "The /user/<username> route accesses the users dictionary with bracket notation without verifying the key exists, raising KeyError for unknown usernames.",
+      "suggested_fix": "Use dict.get() with a default or check key membership before access, and return a 404 response when the user is not found.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.90,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["high", "user-facing", "data lookup failure"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-005",
+      "source": {
+        "path": "/user/deleted_user_42",
+        "error_type": "KeyError",
+        "error_message": "'deleted_user_42'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /user/deleted_user_42 raised KeyError. The user existed previously but was removed from the in-memory store. No soft-delete mechanism; the key is simply absent."
+    },
+    "expected_output": {
+      "root_cause": "The /user route does not handle the case where a previously existing user has been deleted from the data store, resulting in a KeyError on direct dictionary access.",
+      "suggested_fix": "Check for key existence before access and return a 404 with a message indicating the user was not found or has been removed.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.85,
+      "confidence_max": 0.98,
+      "severity_reasoning_contains": ["high", "user-facing", "deleted resource"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-006",
+      "source": {
+        "path": "/user/",
+        "error_type": "KeyError",
+        "error_message": "''",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /user/ with an empty string username raised KeyError. The route matched with an empty path segment and attempted to look up an empty string key in the users dictionary."
+    },
+    "expected_output": {
+      "root_cause": "The /user route accepts an empty string as a valid username parameter and attempts a dictionary lookup on it, producing a KeyError because no entry has an empty-string key.",
+      "suggested_fix": "Validate that the username parameter is non-empty before performing the lookup, and return a 400 response for empty or whitespace-only usernames.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.85,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["high", "missing input validation", "user-facing"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-007",
+      "source": {
+        "path": "/search",
+        "error_type": "TimeoutError",
+        "error_message": "Request timed out after 5 seconds",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /search timed out. The handler calls time.sleep(5) synchronously, blocking the entire request thread for 5 seconds and exceeding the server timeout threshold."
+    },
+    "expected_output": {
+      "root_cause": "The /search route contains a blocking time.sleep(5) call that holds the request thread for 5 seconds, causing the request to exceed the server's timeout limit.",
+      "suggested_fix": "Remove the blocking sleep(5) call and replace it with the actual search implementation, or use an async non-blocking approach if a delay is intentionally required.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.92,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["critical", "blocks request thread", "affects all search users"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-008",
+      "source": {
+        "path": "/search",
+        "error_type": "TimeoutError",
+        "error_message": "Database query exceeded 10s timeout",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /search timed out because the underlying database query runs a full table scan without an index. The query returns after ~12 seconds, exceeding the 10-second timeout."
+    },
+    "expected_output": {
+      "root_cause": "The /search route executes a database query that performs a full table scan due to a missing index, causing the query to exceed the 10-second timeout threshold.",
+      "suggested_fix": "Add an appropriate database index on the searched column(s) to eliminate the full table scan, and consider adding pagination or a LIMIT clause to bound result size.",
+      "affected_components": ["app.py", "database schema"],
+      "confidence_min": 0.75,
+      "confidence_max": 0.92,
+      "severity_reasoning_contains": ["critical", "performance", "all search requests affected"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-009",
+      "source": {
+        "path": "/search",
+        "error_type": "ConnectionError",
+        "error_message": "Connection to search service timed out after 5s",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /search failed because the external search service at search-service:9200 is unreachable. The connection attempt blocks for 5 seconds before raising ConnectionError."
+    },
+    "expected_output": {
+      "root_cause": "The /search route depends on an external search service that is unreachable, and the connection attempt blocks synchronously for 5 seconds before failing with ConnectionError.",
+      "suggested_fix": "Add a circuit breaker or shorter connection timeout with a fallback error response, and implement health checks for the external search service dependency.",
+      "affected_components": ["app.py", "search service integration"],
+      "confidence_min": 0.70,
+      "confidence_max": 0.88,
+      "severity_reasoning_contains": ["critical", "external dependency", "service unavailable"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-010",
+      "source": {
+        "path": "/api/data",
+        "error_type": "JSONDecodeError",
+        "error_message": "Expecting value: line 1 column 1 (char 0)",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "POST /api/data received a request with Content-Type application/json but the body was empty. json.loads('') raised JSONDecodeError."
+    },
+    "expected_output": {
+      "root_cause": "The /api/data route calls json.loads() on the raw request body without checking whether the body is empty or valid JSON, raising JSONDecodeError for empty payloads.",
+      "suggested_fix": "Validate that the request body is non-empty before parsing, and wrap JSON parsing in error handling that returns a 400 response with a descriptive message for malformed input.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.88,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "input validation", "malformed request"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-011",
+      "source": {
+        "path": "/api/data",
+        "error_type": "KeyError",
+        "error_message": "'name'",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "POST /api/data received valid JSON but the payload was missing the required 'name' field. The handler accesses data['name'] without checking for its presence."
+    },
+    "expected_output": {
+      "root_cause": "The /api/data route accesses the 'name' key from the parsed JSON body using bracket notation without verifying the field exists, raising KeyError when the client omits it.",
+      "suggested_fix": "Validate the presence of required fields before accessing them, and return a 400 response listing the missing fields when validation fails.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.88,
+      "confidence_max": 1.0,
+      "severity_reasoning_contains": ["medium", "missing required field", "client error"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-012",
+      "source": {
+        "path": "/process",
+        "error_type": "RuntimeError",
+        "error_message": "Worker process exited with code 137",
+        "source_file": "worker.py"
+      },
+      "macroscope_context": "POST /process spawned a worker that was OOM-killed (exit code 137). The failure is intermittent, occurring only when payload size exceeds 50MB. Under normal load the route works correctly."
+    },
+    "expected_output": {
+      "root_cause": "The /process route spawns a worker that loads the entire payload into memory, causing an out-of-memory kill (exit code 137) when payload size exceeds the worker's memory limit.",
+      "suggested_fix": "Implement streaming or chunked processing for large payloads to avoid loading the entire payload into memory at once, and add a request size limit to reject oversized payloads early.",
+      "affected_components": ["app.py", "worker.py"],
+      "confidence_min": 0.65,
+      "confidence_max": 0.82,
+      "severity_reasoning_contains": ["high", "intermittent", "partial failure", "large payloads only"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-013",
+      "source": {
+        "path": "/healthcheck",
+        "error_type": "ConnectionError",
+        "error_message": "Connection refused to database on port 5432",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "GET /healthcheck fails intermittently with ConnectionError. The database connection pool occasionally exhausts all connections during traffic spikes. The error resolves itself within 30 seconds as connections are recycled."
+    },
+    "expected_output": {
+      "root_cause": "The /healthcheck route fails intermittently because the database connection pool is exhausted during traffic spikes, causing new connection attempts to be refused until connections are recycled.",
+      "suggested_fix": "Increase the connection pool size or add pool overflow capacity, and implement a retry with backoff in the health check to distinguish transient pool exhaustion from genuine database outages.",
+      "affected_components": ["app.py", "database connection pool"],
+      "confidence_min": 0.60,
+      "confidence_max": 0.78,
+      "severity_reasoning_contains": ["medium", "intermittent", "self-resolving", "transient"]
+    }
+  },
+  {
+    "input": {
+      "incident_id": "INC-014",
+      "source": {
+        "path": "/webhook",
+        "error_type": "TypeError",
+        "error_message": "'NoneType' object is not subscriptable",
+        "source_file": "app.py"
+      },
+      "macroscope_context": "POST /webhook occasionally receives a callback with a null 'data' field. The handler accesses payload['data']['event'] without null-checking, raising TypeError when 'data' is None. Occurs for roughly 2% of webhook deliveries from the third-party provider."
+    },
+    "expected_output": {
+      "root_cause": "The /webhook handler accesses nested fields in the payload without null-checking the 'data' field, raising TypeError when the third-party provider sends a callback with data set to null.",
+      "suggested_fix": "Add null checks for the 'data' field before accessing nested properties, and return a 200 acknowledgment with a logged warning for payloads with null data to prevent retries from the provider.",
+      "affected_components": ["app.py"],
+      "confidence_min": 0.78,
+      "confidence_max": 0.92,
+      "severity_reasoning_contains": ["high", "intermittent", "third-party dependency", "partial failure"]
+    }
+  }
+]

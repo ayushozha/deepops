@@ -1,0 +1,155 @@
+[
+  {
+    "incident_id": "INC-001",
+    "title": "ZeroDivisionError on GET /calculate/0",
+    "status": "stored",
+    "source": {
+      "provider": "sentry",
+      "path": "GET /calculate/0",
+      "error_type": "ZeroDivisionError",
+      "error_message": "division by zero",
+      "source_file": "demo-app/main.py",
+      "timestamp_ms": 1711540800000,
+      "fingerprint": "calculate-zero-division-001",
+      "raw_payload": {
+        "event_id": "abc123def456",
+        "level": "error",
+        "platform": "python",
+        "exception": {
+          "type": "ZeroDivisionError",
+          "value": "division by zero",
+          "module": "builtins",
+          "stacktrace": {
+            "frames": [
+              {
+                "filename": "demo-app/main.py",
+                "function": "calculate",
+                "lineno": 26,
+                "context_line": "return {\"result\": a // b}"
+              }
+            ]
+          }
+        },
+        "request": {
+          "method": "GET",
+          "url": "http://localhost:8000/calculate/1/0"
+        }
+      }
+    },
+    "diagnosis": {
+      "status": "pending",
+      "root_cause": null,
+      "suggested_fix": null,
+      "affected_components": null,
+      "confidence": null,
+      "severity_reasoning": null,
+      "macroscope_context": null,
+      "started_at_ms": null,
+      "completed_at_ms": null
+    },
+    "severity": "medium",
+    "created_at_ms": 1711540800000
+  },
+  {
+    "incident_id": "INC-002",
+    "title": "KeyError on GET /user/unknown",
+    "status": "stored",
+    "source": {
+      "provider": "sentry",
+      "path": "GET /user/unknown",
+      "error_type": "KeyError",
+      "error_message": "'name'",
+      "source_file": "demo-app/main.py",
+      "timestamp_ms": 1711540860000,
+      "fingerprint": "user-key-error-002",
+      "raw_payload": {
+        "event_id": "def456ghi789",
+        "level": "error",
+        "platform": "python",
+        "exception": {
+          "type": "KeyError",
+          "value": "'name'",
+          "module": "builtins",
+          "stacktrace": {
+            "frames": [
+              {
+                "filename": "demo-app/main.py",
+                "function": "get_user",
+                "lineno": 34,
+                "context_line": "return {\"user\": result['name']}"
+              }
+            ]
+          }
+        },
+        "request": {
+          "method": "GET",
+          "url": "http://localhost:8000/user/unknown"
+        }
+      }
+    },
+    "diagnosis": {
+      "status": "pending",
+      "root_cause": null,
+      "suggested_fix": null,
+      "affected_components": null,
+      "confidence": null,
+      "severity_reasoning": null,
+      "macroscope_context": null,
+      "started_at_ms": null,
+      "completed_at_ms": null
+    },
+    "severity": "high",
+    "created_at_ms": 1711540860000
+  },
+  {
+    "incident_id": "INC-003",
+    "title": "TimeoutError on GET /search",
+    "status": "stored",
+    "source": {
+      "provider": "sentry",
+      "path": "GET /search",
+      "error_type": "TimeoutError",
+      "error_message": "search endpoint timed out",
+      "source_file": "demo-app/main.py",
+      "timestamp_ms": 1711540920000,
+      "fingerprint": "search-timeout-003",
+      "raw_payload": {
+        "event_id": "ghi789jkl012",
+        "level": "error",
+        "platform": "python",
+        "exception": {
+          "type": "TimeoutError",
+          "value": "search endpoint timed out",
+          "module": "builtins",
+          "stacktrace": {
+            "frames": [
+              {
+                "filename": "demo-app/main.py",
+                "function": "search",
+                "lineno": 48,
+                "context_line": "time.sleep(5)"
+              }
+            ]
+          }
+        },
+        "request": {
+          "method": "GET",
+          "url": "http://localhost:8000/search?q=test"
+        }
+      }
+    },
+    "diagnosis": {
+      "status": "pending",
+      "root_cause": null,
+      "suggested_fix": null,
+      "affected_components": null,
+      "confidence": null,
+      "severity_reasoning": null,
+      "macroscope_context": null,
+      "started_at_ms": null,
+      "completed_at_ms": null
+    },
+    "severity": "critical",
+    "created_at_ms": 1711540920000
+  }
+]
